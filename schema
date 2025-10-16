@@ -1,0 +1,234 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table ARTIST {
+  artist_id int [pk]
+  // name // composite (first_name, last_name)
+  first_name varchar
+  last_name varchar
+  birth_year int
+  death_year int
+  nationality varchar
+  bio text
+}
+
+Table ARTWORK [headercolor: #79AD51] {
+  artwork_id int [pk]
+  title varchar [not null]
+  creation_year int
+  medium int
+  // dimensions // composite (height, width, depth)
+  height decimal 
+  width decimal 
+  depth decimal 
+  is_owned bool [not null]
+  location_id int
+  description text
+}
+
+Table EXHIBITION [headercolor: #EB801B] {
+  exhibition_id int [pk]
+  title varchar [not null]
+  start_date date [not null]
+  end_date date [not null]
+  curator_id int
+  description text
+  theme_sponsor varchar
+}
+
+Table LOCATION {
+  location_id int [pk]
+  location_type smallint [not null]
+  name varchar
+}
+
+Table DONOR [headercolor: #1E69FD] {
+  donor_id int [pk]
+  // donor_name // composite (first_name, last_name, organization_name)
+  first_name varchar
+  last_name varchar
+  organization_name varchar
+  is_organization bool [not null]
+  address varchar
+  email varchar
+  phone varchar
+}
+
+Table DONATION [headercolor: #1E69FD] {
+  donation_id int [pk]
+  donor_id int [not null]
+  amount decimal [not null]
+  donation_date date [not null]
+  purpose smallint
+  acquisition_id int
+}
+
+Table ACQUISITION [headercolor: #79AD51] {
+  acquisition_id int [pk]
+  artwork_id int [not null, unique]
+  acquisition_date date [not null]
+  price_value decimal
+  source_name varchar
+  method smallint [not null]
+}
+
+Table MEMBER [headercolor: #1E69FD] {
+  member_id int [pk]
+  // name // composite (first_name, last_name)
+  first_name varchar
+  last_name varchar
+  email varchar
+  phone varchar
+  address varchar
+  membership_type smallint
+  is_student bool
+  start_date date
+  expiration_date date
+  auto_renew bool
+}
+
+Table VISITOR [headercolor: #EB801B] {
+  visitor_id int [pk]
+  // name //composite (first_name, last_name)
+  first_name varchar
+  last_name varchar
+  is_student bool
+  email varchar
+  phone varchar
+  created_at date
+}
+
+Table TICKET [headercolor: #222] {
+  ticket_id int [pk]
+  event_id int
+  visitor_id int
+  member_id int
+  purchase_date date
+  quantity int
+  checked_in bool
+  check_in_time datetime
+}
+
+Table EVENT [headercolor: #CA4242] {
+  event_id int [pk]
+  name varchar [not null]
+  description varchar
+  event_date date [not null]
+  location_id int [not null]
+  exhibition_id int
+  capacity int
+}
+
+Table SHOP_ITEM {
+  item_id int [pk]
+  item_name varchar [not null]
+  description text
+  category varchar
+  price decimal(6,2) [not null]
+  quantity_in_stock int
+}
+
+Table SALE [headercolor: #79AD51] {
+  sale_id int [pk]
+  sale_date datetime [not null]
+  member_id int
+  visitor_id int
+  total_amount decimal(6,2) [not null]
+  discount_amount decimal(4,2) // percentage discount max 99.99%
+  payment_method int
+}
+
+Table STAFF [headercolor: #1E69FD] {
+  staff_id int [pk]
+  ssn int
+  department_id int [not null]
+  name varchar 
+  email varchar [not null, unique]
+  title varchar
+  hire_date date [not null]
+  supervisor_id int
+}
+
+Table DEPARTMENT [headercolor: #E4A62E] {
+  department_id int [pk]
+  department_name varchar [not null]
+  manager_id int
+  location varchar
+}
+
+// Relationships w/ attributes -> entities
+
+// Artist & Artwork (ART_CREATOR)
+Table ARTWORK_CREATOR {
+  artwork_id int [not null]
+  artist_id int [not null]
+  role varchar // tracks contributors/collaborators
+
+  indexes {
+    (artwork_id, artist_id) [unique]
+    artist_id
+    artwork_id
+  }
+}
+
+// Exhibition & Artwork (DISPLAYED_IN)
+Table EXHIBITION_ARTWORK [headercolor: #222] {
+  exhibition_art_id int [pk]
+  artwork_id int [not null]
+  location_id int [not null] 
+  exhibition_id int [not null]
+  start_view_date date
+  end_view_date date
+}
+
+// Sale & Shop Item (SALE_ITEM)
+Table SALE_ITEM {
+  sale_item_id int [pk]
+  sale_id int [not null]
+  item_id int [not null]
+  quantity int [not null]
+  price_at_sale decimal(6,2)
+}
+
+// Relationships
+// ARTWORK "CURRENTLY_AT"
+Ref: LOCATION.location_id < ARTWORK.location_id
+
+// EXHIBITION
+Ref: STAFF.staff_id < EXHIBITION.curator_id
+
+// EXHIBITION_ARTWORK (DISPLAYED_IN)
+Ref: EXHIBITION.exhibition_id < EXHIBITION_ARTWORK.exhibition_id
+Ref: ARTWORK.artwork_id       < EXHIBITION_ARTWORK.artwork_id
+Ref: LOCATION.location_id     < EXHIBITION_ARTWORK.location_id
+
+// ARTWORK_CREATOR (ART_CREATOR)
+Ref: ARTWORK.artwork_id < ARTWORK_CREATOR.artwork_id
+Ref: ARTIST.artist_id   < ARTWORK_CREATOR.artist_id
+
+// ACQUISITION / DONATION / DONOR
+Ref: ARTWORK.artwork_id         < ACQUISITION.artwork_id
+Ref: DONOR.donor_id             < DONATION.donor_id
+Ref: ACQUISITION.acquisition_id < DONATION.acquisition_id
+
+// EVENT / TICKET
+Ref: LOCATION.location_id     < EVENT.location_id
+Ref: EXHIBITION.exhibition_id < EVENT.exhibition_id
+Ref: EVENT.event_id           < TICKET.event_id
+Ref: MEMBER.member_id         < TICKET.member_id
+Ref: VISITOR.visitor_id       < TICKET.visitor_id
+
+// SALE / SHOP
+Ref: MEMBER.member_id   < SALE.member_id
+Ref: VISITOR.visitor_id < SALE.visitor_id
+Ref: SALE.sale_id       < SALE_ITEM.sale_id
+Ref: SHOP_ITEM.item_id  < SALE_ITEM.item_id
+
+// ORG: STAFF / DEPARTMENT
+Ref: DEPARTMENT.department_id < STAFF.department_id
+Ref: "STAFF"."staff_id" < "STAFF"."supervisor_id" [color: #24BAB1]   // recursive
+Ref: STAFF.staff_id     < DEPARTMENT.manager_id // manager must be staff
+
+Note note_1759796030429 {
+''
+}
