@@ -18,8 +18,3 @@ BEGIN
 END$$
 
 DELIMITER ;
-
--- TODO: Run in MySQL terminal to make artist_id auto increment
--- ALTER TABLE ARTIST MODIFY artist_id INT NOT NULL AUTO_INCREMENT,
--- ALTER TABLE ARTIST AUTO_INCREMENT = 1001; 
--- Set starting point for artist_id to 1001 but we can change it to something else if needed

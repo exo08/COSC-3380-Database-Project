@@ -1,5 +1,5 @@
 CREATE TABLE `ARTIST` (
-  `artist_id` int PRIMARY KEY,
+  `artist_id` int PRIMARY KEY AUTO_INCREMENT,
   `first_name` varchar(255),
   `last_name` varchar(255),
   `birth_year` int,
@@ -7,6 +7,8 @@ CREATE TABLE `ARTIST` (
   `nationality` varchar(255),
   `bio` text
 );
+
+ALTER TABLE `ARTIST` AUTO_INCREMENT = 1001; -- start at 1001
 
 CREATE TABLE `ARTWORK` (
   `artwork_id` int PRIMARY KEY,
