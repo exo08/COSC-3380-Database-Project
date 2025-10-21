@@ -81,7 +81,7 @@ CREATE TABLE `ACQUISITION` (
 ALTER TABLE `ACQUISITION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `MEMBER` (
-  `member_id` int PRIMARY KEY,
+  `member_id` int PRIMARY KEY AUTO_INCREMENT,
   `first_name` varchar(255),
   `last_name` varchar(255),
   `email` varchar(255),
@@ -93,6 +93,8 @@ CREATE TABLE `MEMBER` (
   `expiration_date` date,
   `auto_renew` bool
 );
+
+ALTER TABLE `MEMBER` AUTO_INCREMENT=1001;
 
 CREATE TABLE `VISITOR` (
   `visitor_id` int PRIMARY KEY,

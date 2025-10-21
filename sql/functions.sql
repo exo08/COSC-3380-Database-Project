@@ -111,4 +111,24 @@ BEGIN
   SET p_acquisition_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateMember(
+  IN p_first_name varchar(255),
+  IN p_last_name varchar(255),
+  IN p_email varchar(255),
+  IN p_phone varchar(255),
+  IN p_address varchar(255),
+  IN p_membership_type smallint,
+  IN p_is_student bool,
+  IN p_start_date date,
+  IN p_expiration_date date,
+  IN p_auto_renew bool,
+  OUT p_member_id int
+)
+
+BEGIN
+  INSERT INTO MEMBER(first_name, last_name, email, phone, address, membership_type, is_student, start_date, expiration_date, auto_renew)
+  VALUES(p_first_name, p_last_name, p_email, p_phone, p_address, p_membership_type, p_is_student, p_start_date, p_expiration_date, p_auto_renew)
+  SET p_member_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
