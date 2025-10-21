@@ -211,4 +211,21 @@ BEGIN
   SET p-sale_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateStaff(
+  IN p_ssn int,
+  IN p_department_id int,
+  IN p_name varchar(255),
+  IN p_email varchar(255),
+  IN p_title varchar(255),
+  IN p_hire_date date,
+  IN p_supervisor_id int,
+  OUT p_staff_id int
+)
+
+BEGIN
+  INSERT INTO STAFF(ssn, department_id, name, email, title, hire_date, supervisor_id)
+  VALUES(p_ssn, p_department_id, p_name, p_email, p_title, p_hire_date, p_supervisor_id)
+  SET p_staff_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;

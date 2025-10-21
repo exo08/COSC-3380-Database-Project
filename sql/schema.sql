@@ -157,7 +157,7 @@ CREATE TABLE `SALE` (
 ALTER TABLE `SALE` AUTO_INCREMENT=1001;
 
 CREATE TABLE `STAFF` (
-  `staff_id` int PRIMARY KEY,
+  `staff_id` int PRIMARY KEY AUTO_INCREMENT,
   `ssn` int,
   `department_id` int NOT NULL,
   `name` varchar(255),
@@ -166,6 +166,8 @@ CREATE TABLE `STAFF` (
   `hire_date` date NOT NULL,
   `supervisor_id` int
 );
+
+ALTER TABLE `STAFF` AUTO_INCREMENT=1001;
 
 CREATE TABLE `DEPARTMENT` (
   `department_id` int PRIMARY KEY,
