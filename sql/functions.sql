@@ -147,4 +147,20 @@ BEGIN
   SET p_visitor_id = LAST_INSERT_ID();  
 END$$
 
+CREATE PROCEDURE CreateTicket(
+  IN p_event_id int,
+  IN p_visitor_id int,
+  IN p_member_id int,
+  IN p_purchase_date date,
+  IN p_quantity int,
+  IN p_checked_in bool,
+  IN p_check_in_time datetime,
+  OUT p_ticket_id int
+)
+
+BEGIN
+  INSERT INTO TICKET(event_id, visitor_id, member_id, purchase_date, quantity, checked_in, check_in_time)
+  VALUES(p_event_id, p_visitor_id, p_member_id, p_purchase_date, p_quantity, p_checked_in, p_check_in_time)
+  SET p_ticket_id = LAST_INSERT_ID();
+
 DELIMITER ;

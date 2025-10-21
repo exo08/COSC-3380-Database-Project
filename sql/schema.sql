@@ -109,7 +109,7 @@ CREATE TABLE `VISITOR` (
 ALTER TABLE `VISITOR` AUTO_INCREMENT=1001;
 
 CREATE TABLE `TICKET` (
-  `ticket_id` int PRIMARY KEY,
+  `ticket_id` int PRIMARY KEY AUTO_INCREMENT,
   `event_id` int,
   `visitor_id` int,
   `member_id` int,
@@ -118,6 +118,8 @@ CREATE TABLE `TICKET` (
   `checked_in` bool,
   `check_in_time` datetime
 );
+
+ALTER TABLE `TICKET` AUTO_INCREMENT=1001;
 
 CREATE TABLE `EVENT` (
   `event_id` int PRIMARY KEY,
