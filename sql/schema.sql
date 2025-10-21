@@ -70,13 +70,15 @@ CREATE TABLE `DONATION` (
 ALTER TABLE `DONATION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `ACQUISITION` (
-  `acquisition_id` int PRIMARY KEY,
+  `acquisition_id` int PRIMARY KEY AUTO_INCREMENT,
   `artwork_id` int UNIQUE NOT NULL,
   `acquisition_date` date NOT NULL,
   `price_value` decimal,
   `source_name` varchar(255),
   `method` smallint NOT NULL
 );
+
+ALTER TABLE `ACQUISITION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `MEMBER` (
   `member_id` int PRIMARY KEY,

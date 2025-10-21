@@ -96,4 +96,19 @@ BEGIN
   SET p_donation_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateAcquisition(
+  IN p_artwork_id int,
+  IN p_acquisition_date date,
+  IN p_price_value decimal,
+  IN p_source_name varchar(255),
+  IN p_method smallint,
+  OUT p_acquisition_id int
+)
+
+BEGIN
+  INSERT INTO ACQUISITION(artwork_id, acquisition_date, price_value, source_name, method)
+  VALUES(p_artwork_id, p_acquisition_date, p_price_value, p_source_name, p_method)
+  SET p_acquisition_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
