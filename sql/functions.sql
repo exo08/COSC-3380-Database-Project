@@ -52,4 +52,16 @@ BEGIN
   SET p_exhibition_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateLocation(
+  IN p_location_type smallint,
+  IN p_name varchar(255),
+  OUT p_location_id
+)
+
+BEGIN 
+  INSERT INTO LOCATION(location_type, name)
+  VALUES(p_location_type, p_name)
+  SET p_location_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
