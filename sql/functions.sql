@@ -228,4 +228,17 @@ BEGIN
   SET p_staff_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateDepartment(
+  IN p_department_name varchar(255),
+  IN p_manager_id int,
+  IN p_location varchar(255),
+  OUT p_department_id
+)
+
+BEGIN
+  INSERT INTO DEPARTMENT(department_name, manager_id, location)
+  VALUES(p_department_name, p_manager_id, p_location)
+  SET p_department_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;

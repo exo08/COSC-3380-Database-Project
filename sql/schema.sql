@@ -170,11 +170,13 @@ CREATE TABLE `STAFF` (
 ALTER TABLE `STAFF` AUTO_INCREMENT=1001;
 
 CREATE TABLE `DEPARTMENT` (
-  `department_id` int PRIMARY KEY,
+  `department_id` int PRIMARY KEY AUTO_INCREMENT,
   `department_name` varchar(255) NOT NULL,
   `manager_id` int,
   `location` varchar(255)
 );
+
+ALTER TABLE `DEPARTMENT` AUTO_INCREMENT=1001;
 
 CREATE TABLE `ARTWORK_CREATOR` (
   `artwork_id` int NOT NULL,
