@@ -145,7 +145,7 @@ CREATE TABLE `SHOP_ITEM` (
 ALTER TABLE `SHOP_ITEM` AUTO_INCREMENT=1001;
 
 CREATE TABLE `SALE` (
-  `sale_id` int PRIMARY KEY,
+  `sale_id` int PRIMARY KEY AUTO_INCREMENT,
   `sale_date` datetime NOT NULL,
   `member_id` int,
   `visitor_id` int,
@@ -153,6 +153,8 @@ CREATE TABLE `SALE` (
   `discount_amount` decimal(4,2),
   `payment_method` int
 );
+
+ALTER TABLE `SALE` AUTO_INCREMENT=1001;
 
 CREATE TABLE `STAFF` (
   `staff_id` int PRIMARY KEY,

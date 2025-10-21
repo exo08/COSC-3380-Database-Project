@@ -195,4 +195,20 @@ BEGIN
   SET p_item_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateSale(
+  IN p_sale_date datetime,
+  IN p_member_id int,
+  IN p_visitor_id int,
+  IN p_total_amount decimal(6,2),
+  IN p_discount_amount decimal(4,2),
+  IN p_payment_method int,
+  OUT p_sale_id int
+)
+
+BEGIN
+  INSERT INTO SALE(sale_date, member_id, visitor_id, total_amount, discount_amount, payment_method)
+  VALUES(p_sale_date, p_member_id, p_visitor_id, p_total_amount, p_discount_amount, p_payment_method)
+  SET p-sale_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
