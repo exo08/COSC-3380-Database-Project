@@ -241,4 +241,15 @@ BEGIN
   SET p_department_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE MatchArtToArtist(
+  IN p_artwork_id int,
+  IN p_artist_id int,
+  IN p_role varchar(255)
+)
+
+BEGIN
+  INSERT INTO ARTWORK_CREATOR(artwork_id, artist_id, role)
+  VALUES(p_artwork_id, p_artist_id, p_role);
+END$$
+
 DELIMITER ;
