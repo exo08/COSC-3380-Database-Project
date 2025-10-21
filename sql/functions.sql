@@ -81,4 +81,19 @@ BEGIN
   SET p_donor_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateDonation(
+  IN p_donor_id int,
+  IN p_amount decimal,
+  IN p_donation_date date,
+  IN p_purpose smallint,
+  IN p_acquisition_id int,
+  OUT p_donation_id
+)
+
+BEGIN
+  INSERT INTO DONATION(donor_id, amount, donation_date, purpose, acquisition_id)
+  VALUES(p_donor_id, p_amount, p_donation_date, p_purpose, p_acquisition_id)
+  SET p_donation_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;

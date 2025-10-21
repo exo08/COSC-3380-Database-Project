@@ -59,13 +59,15 @@ CREATE TABLE `DONOR` (
 ALTER TABLE `DONOR` AUTO_INCREMENT=1001;
 
 CREATE TABLE `DONATION` (
-  `donation_id` int PRIMARY KEY,
+  `donation_id` int PRIMARY KEY AUTO_INCREMENT,
   `donor_id` int NOT NULL,
   `amount` decimal NOT NULL,
   `donation_date` date NOT NULL,
   `purpose` smallint,
   `acquisition_id` int
 );
+
+ALTER TABLE `DONATION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `ACQUISITION` (
   `acquisition_id` int PRIMARY KEY,
