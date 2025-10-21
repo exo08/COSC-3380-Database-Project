@@ -36,4 +36,20 @@ BEGIN
   SET p_artwork_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateExhibition(
+  IN p_title varchar(255),
+  IN p_start_date date,
+  IN p_end_date date,
+  IN p_curator_id int,
+  IN p_description text,
+  IN p_theme_sponsor varchar(255),
+  OUT p_exhibition_id int
+)
+
+BEGIN
+  INSERT INTO EXHIBITION(title, start_date, end_date, curator_id, description, theme_sponsor)
+  VALUES(p_title, p_start_date, p_end_date, p_curator_id, p_description, p_theme_sponsor)
+  SET p_exhibition_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;

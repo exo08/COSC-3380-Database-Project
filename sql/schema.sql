@@ -26,7 +26,7 @@ CREATE TABLE `ARTWORK` (
 ALTER TABLE `ARTWORK` AUTO_INCREMENT=1001;
 
 CREATE TABLE `EXHIBITION` (
-  `exhibition_id` int PRIMARY KEY,
+  `exhibition_id` int PRIMARY KEY AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
@@ -34,6 +34,8 @@ CREATE TABLE `EXHIBITION` (
   `description` text,
   `theme_sponsor` varchar(255)
 );
+
+ALTER TABLE `EXHIBITION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `LOCATION` (
   `location_id` int PRIMARY KEY,
