@@ -131,4 +131,20 @@ BEGIN
   SET p_member_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateVisitor(
+  IN p_first_name varchar(255),
+  IN p_last_name varchar(255),
+  IN p_is_student bool,
+  IN p_email varchar(255),
+  IN p_phone varchar(255),
+  IN p_created_at date,
+  OUT p_visitor_id int
+)
+
+BEGIN
+  INSERT INTO VISITOR(first_name, last_name, is_student, email, phone, created_at)
+  VALUES(p_first_name, p_last_name, p_is_student, p_email, p_phone, p_created_at)
+  SET p_visitor_id = LAST_INSERT_ID();  
+END$$
+
 DELIMITER ;

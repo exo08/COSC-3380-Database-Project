@@ -97,7 +97,7 @@ CREATE TABLE `MEMBER` (
 ALTER TABLE `MEMBER` AUTO_INCREMENT=1001;
 
 CREATE TABLE `VISITOR` (
-  `visitor_id` int PRIMARY KEY,
+  `visitor_id` int PRIMARY KEY AUTO_INCREMENT,
   `first_name` varchar(255),
   `last_name` varchar(255),
   `is_student` bool,
@@ -105,6 +105,8 @@ CREATE TABLE `VISITOR` (
   `phone` varchar(255),
   `created_at` date
 );
+
+ALTER TABLE `VISITOR` AUTO_INCREMENT=1001;
 
 CREATE TABLE `TICKET` (
   `ticket_id` int PRIMARY KEY,
