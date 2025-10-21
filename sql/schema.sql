@@ -122,7 +122,7 @@ CREATE TABLE `TICKET` (
 ALTER TABLE `TICKET` AUTO_INCREMENT=1001;
 
 CREATE TABLE `EVENT` (
-  `event_id` int PRIMARY KEY,
+  `event_id` int PRIMARY KEY AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` varchar(255),
   `event_date` date NOT NULL,
@@ -130,6 +130,8 @@ CREATE TABLE `EVENT` (
   `exhibition_id` int,
   `capacity` int
 );
+
+ALTER TABLE `EVENT` AUTO_INCREMENT=1001;
 
 CREATE TABLE `SHOP_ITEM` (
   `item_id` int PRIMARY KEY,

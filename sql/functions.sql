@@ -162,5 +162,6 @@ BEGIN
   INSERT INTO TICKET(event_id, visitor_id, member_id, purchase_date, quantity, checked_in, check_in_time)
   VALUES(p_event_id, p_visitor_id, p_member_id, p_purchase_date, p_quantity, p_checked_in, p_check_in_time)
   SET p_ticket_id = LAST_INSERT_ID();
+END$$
 
 DELIMITER ;
