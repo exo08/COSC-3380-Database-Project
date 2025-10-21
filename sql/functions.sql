@@ -164,4 +164,20 @@ BEGIN
   SET p_ticket_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateEvent(
+  IN p_name varchar(255),
+  IN p_description varchar(255),
+  IN p_event_date date,
+  IN p_location_id int,
+  IN p_exhibition_id int,
+  IN p_capacity int,
+  OUT p_event_id int
+)
+
+BEGIN
+  INSERT INTO EVENT(name, description, event_date, location_id, exhibition_id, capacity)
+  VALUES(p_name, p_description, p_event_date, p_location_id, p_exhibition_id, p_capacity)
+  SET p_event_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
