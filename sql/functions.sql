@@ -180,4 +180,19 @@ BEGIN
   SET p_event_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateShopItem(
+  IN p_name varchar(255),
+  IN p_description text,
+  IN p_category varchar(255),
+  IN p_price decimal(6,2),
+  IN p_quantity_in_stock int,
+  OUT p_item_id int
+)
+
+BEGIN
+  INSERT INTO SHOP_ITEM(name, description, category, price, quantity_in_stock)
+  VALUES(p_name, p_description, p_category, p_price, p_quantity_in_stock)
+  SET p_item_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;

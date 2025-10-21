@@ -134,13 +134,15 @@ CREATE TABLE `EVENT` (
 ALTER TABLE `EVENT` AUTO_INCREMENT=1001;
 
 CREATE TABLE `SHOP_ITEM` (
-  `item_id` int PRIMARY KEY,
+  `item_id` int PRIMARY KEY AUTO_INCREMENT,
   `item_name` varchar(255) NOT NULL,
   `description` text,
   `category` varchar(255),
   `price` decimal(6,2) NOT NULL,
   `quantity_in_stock` int
 );
+
+ALTER TABLE `SHOP_ITEM` AUTO_INCREMENT=1001;
 
 CREATE TABLE `SALE` (
   `sale_id` int PRIMARY KEY,
