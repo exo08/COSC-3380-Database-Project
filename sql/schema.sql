@@ -46,7 +46,7 @@ CREATE TABLE `LOCATION` (
 ALTER TABLE `LOCATION` AUTO_INCREMENT=1001;
 
 CREATE TABLE `DONOR` (
-  `donor_id` int PRIMARY KEY,
+  `donor_id` int PRIMARY KEY AUTO_INCREMENT,
   `first_name` varchar(255),
   `last_name` varchar(255),
   `organization_name` varchar(255),
@@ -55,6 +55,8 @@ CREATE TABLE `DONOR` (
   `email` varchar(255),
   `phone` varchar(255)
 );
+
+ALTER TABLE `DONOR` AUTO_INCREMENT=1001;
 
 CREATE TABLE `DONATION` (
   `donation_id` int PRIMARY KEY,

@@ -64,4 +64,21 @@ BEGIN
   SET p_location_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE CreateDonor(
+  IN p_first_name varchar(255),
+  IN p_last_name varchar(255),
+  IN p_organization_name varchar(255),
+  IN p_is_organization bool,
+  IN p_address varchar(255),
+  IN p_email varchar(255),
+  IN p_phone varchar(255)
+  OUT p_donor_id int
+)
+
+BEGIN
+  INSERT INTO DONOR(first_name, last_name, organization_name, is_organization, address, email, phone)
+  VALUES(p_first_name, p_last_name, p_organization_name, p_is_organization, p_address, p_email, p_phone)
+  SET p_donor_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
