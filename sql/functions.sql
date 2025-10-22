@@ -48,19 +48,19 @@ CREATE PROCEDURE CreateExhibition(
 
 BEGIN
   INSERT INTO EXHIBITION(title, start_date, end_date, curator_id, description, theme_sponsor)
-  VALUES(p_title, p_start_date, p_end_date, p_curator_id, p_description, p_theme_sponsor)
+  VALUES(p_title, p_start_date, p_end_date, p_curator_id, p_description, p_theme_sponsor);
   SET p_exhibition_id = LAST_INSERT_ID();
 END$$
 
 CREATE PROCEDURE CreateLocation(
   IN p_location_type smallint,
   IN p_name varchar(255),
-  OUT p_location_id
+  OUT p_location_id int
 )
 
 BEGIN 
   INSERT INTO LOCATION(location_type, name)
-  VALUES(p_location_type, p_name)
+  VALUES(p_location_type, p_name);
   SET p_location_id = LAST_INSERT_ID();
 END$$
 
@@ -71,13 +71,13 @@ CREATE PROCEDURE CreateDonor(
   IN p_is_organization bool,
   IN p_address varchar(255),
   IN p_email varchar(255),
-  IN p_phone varchar(255)
+  IN p_phone varchar(255),
   OUT p_donor_id int
 )
 
 BEGIN
   INSERT INTO DONOR(first_name, last_name, organization_name, is_organization, address, email, phone)
-  VALUES(p_first_name, p_last_name, p_organization_name, p_is_organization, p_address, p_email, p_phone)
+  VALUES(p_first_name, p_last_name, p_organization_name, p_is_organization, p_address, p_email, p_phone);
   SET p_donor_id = LAST_INSERT_ID();
 END$$
 
@@ -87,12 +87,12 @@ CREATE PROCEDURE CreateDonation(
   IN p_donation_date date,
   IN p_purpose smallint,
   IN p_acquisition_id int,
-  OUT p_donation_id
+  OUT p_donation_id int
 )
 
 BEGIN
   INSERT INTO DONATION(donor_id, amount, donation_date, purpose, acquisition_id)
-  VALUES(p_donor_id, p_amount, p_donation_date, p_purpose, p_acquisition_id)
+  VALUES(p_donor_id, p_amount, p_donation_date, p_purpose, p_acquisition_id);
   SET p_donation_id = LAST_INSERT_ID();
 END$$
 
@@ -107,7 +107,7 @@ CREATE PROCEDURE CreateAcquisition(
 
 BEGIN
   INSERT INTO ACQUISITION(artwork_id, acquisition_date, price_value, source_name, method)
-  VALUES(p_artwork_id, p_acquisition_date, p_price_value, p_source_name, p_method)
+  VALUES(p_artwork_id, p_acquisition_date, p_price_value, p_source_name, p_method);
   SET p_acquisition_id = LAST_INSERT_ID();
 END$$
 
@@ -127,7 +127,7 @@ CREATE PROCEDURE CreateMember(
 
 BEGIN
   INSERT INTO MEMBER(first_name, last_name, email, phone, address, membership_type, is_student, start_date, expiration_date, auto_renew)
-  VALUES(p_first_name, p_last_name, p_email, p_phone, p_address, p_membership_type, p_is_student, p_start_date, p_expiration_date, p_auto_renew)
+  VALUES(p_first_name, p_last_name, p_email, p_phone, p_address, p_membership_type, p_is_student, p_start_date, p_expiration_date, p_auto_renew);
   SET p_member_id = LAST_INSERT_ID();
 END$$
 
@@ -143,7 +143,7 @@ CREATE PROCEDURE CreateVisitor(
 
 BEGIN
   INSERT INTO VISITOR(first_name, last_name, is_student, email, phone, created_at)
-  VALUES(p_first_name, p_last_name, p_is_student, p_email, p_phone, p_created_at)
+  VALUES(p_first_name, p_last_name, p_is_student, p_email, p_phone, p_created_at);
   SET p_visitor_id = LAST_INSERT_ID();  
 END$$
 
@@ -160,7 +160,7 @@ CREATE PROCEDURE CreateTicket(
 
 BEGIN
   INSERT INTO TICKET(event_id, visitor_id, member_id, purchase_date, quantity, checked_in, check_in_time)
-  VALUES(p_event_id, p_visitor_id, p_member_id, p_purchase_date, p_quantity, p_checked_in, p_check_in_time)
+  VALUES(p_event_id, p_visitor_id, p_member_id, p_purchase_date, p_quantity, p_checked_in, p_check_in_time);
   SET p_ticket_id = LAST_INSERT_ID();
 END$$
 
@@ -176,12 +176,12 @@ CREATE PROCEDURE CreateEvent(
 
 BEGIN
   INSERT INTO EVENT(name, description, event_date, location_id, exhibition_id, capacity)
-  VALUES(p_name, p_description, p_event_date, p_location_id, p_exhibition_id, p_capacity)
+  VALUES(p_name, p_description, p_event_date, p_location_id, p_exhibition_id, p_capacity);
   SET p_event_id = LAST_INSERT_ID();
 END$$
 
 CREATE PROCEDURE CreateShopItem(
-  IN p_name varchar(255),
+  IN p_item_name varchar(255),
   IN p_description text,
   IN p_category varchar(255),
   IN p_price decimal(6,2),
@@ -190,8 +190,8 @@ CREATE PROCEDURE CreateShopItem(
 )
 
 BEGIN
-  INSERT INTO SHOP_ITEM(name, description, category, price, quantity_in_stock)
-  VALUES(p_name, p_description, p_category, p_price, p_quantity_in_stock)
+  INSERT INTO SHOP_ITEM(item_name, description, category, price, quantity_in_stock)
+  VALUES(p_item_name, p_description, p_category, p_price, p_quantity_in_stock);
   SET p_item_id = LAST_INSERT_ID();
 END$$
 
@@ -207,8 +207,8 @@ CREATE PROCEDURE CreateSale(
 
 BEGIN
   INSERT INTO SALE(sale_date, member_id, visitor_id, total_amount, discount_amount, payment_method)
-  VALUES(p_sale_date, p_member_id, p_visitor_id, p_total_amount, p_discount_amount, p_payment_method)
-  SET p-sale_id = LAST_INSERT_ID();
+  VALUES(p_sale_date, p_member_id, p_visitor_id, p_total_amount, p_discount_amount, p_payment_method);
+  SET p_sale_id = LAST_INSERT_ID();
 END$$
 
 CREATE PROCEDURE CreateStaff(
@@ -224,7 +224,7 @@ CREATE PROCEDURE CreateStaff(
 
 BEGIN
   INSERT INTO STAFF(ssn, department_id, name, email, title, hire_date, supervisor_id)
-  VALUES(p_ssn, p_department_id, p_name, p_email, p_title, p_hire_date, p_supervisor_id)
+  VALUES(p_ssn, p_department_id, p_name, p_email, p_title, p_hire_date, p_supervisor_id);
   SET p_staff_id = LAST_INSERT_ID();
 END$$
 
@@ -232,12 +232,12 @@ CREATE PROCEDURE CreateDepartment(
   IN p_department_name varchar(255),
   IN p_manager_id int,
   IN p_location varchar(255),
-  OUT p_department_id
+  OUT p_department_id int
 )
 
 BEGIN
   INSERT INTO DEPARTMENT(department_name, manager_id, location)
-  VALUES(p_department_name, p_manager_id, p_location)
+  VALUES(p_department_name, p_manager_id, p_location);
   SET p_department_id = LAST_INSERT_ID();
 END$$
 
@@ -263,7 +263,7 @@ CREATE PROCEDURE CreateExhibitionArtwork(
 
 BEGIN
   INSERT INTO EXHIBITION_ARTWORK(artwork_id, location_id, exhibition_id, start_view_date, end_view_date)
-  VALUES(p_artwork_id, p_location_id, p_exhibition_id, p_start_view_date, p_end_view_date)
+  VALUES(p_artwork_id, p_location_id, p_exhibition_id, p_start_view_date, p_end_view_date);
   SET p_exhibition_art_id = LAST_INSERT_ID();
 END$$
 
@@ -277,7 +277,7 @@ CREATE PROCEDURE CreateSaleItem(
 
 BEGIN
   INSERT INTO SALE_ITEM(sale_id, item_id, quantity, price_at_sale)
-  VALUES(p_sale_id, p_item_id, p_quantity, p_price_at_sale)
+  VALUES(p_sale_id, p_item_id, p_quantity, p_price_at_sale);
   SET p_sale_item_id = LAST_INSERT_ID();
 END$$
 
