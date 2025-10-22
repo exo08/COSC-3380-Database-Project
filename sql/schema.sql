@@ -185,7 +185,7 @@ CREATE TABLE `ARTWORK_CREATOR` (
 );
 
 CREATE TABLE `EXHIBITION_ARTWORK` (
-  `exhibition_art_id` int PRIMARY KEY,
+  `exhibition_art_id` int PRIMARY KEY AUTO_INCREMENT,
   `artwork_id` int NOT NULL,
   `location_id` int NOT NULL,
   `exhibition_id` int NOT NULL,
@@ -193,13 +193,17 @@ CREATE TABLE `EXHIBITION_ARTWORK` (
   `end_view_date` date
 );
 
+ALTER TABLE `EXHIBITION_ARTWORK` AUTO_INCREMENT=1001;
+
 CREATE TABLE `SALE_ITEM` (
-  `sale_item_id` int PRIMARY KEY,
+  `sale_item_id` int PRIMARY KEY AUTO_INCREMENT,
   `sale_id` int NOT NULL,
   `item_id` int NOT NULL,
   `quantity` int NOT NULL,
   `price_at_sale` decimal(6,2)
 );
+
+ALTER TABLE `SALE_ITEM` AUTO_INCREMENT=1001;
 
 CREATE UNIQUE INDEX `ARTWORK_CREATOR_index_0` ON `ARTWORK_CREATOR` (`artwork_id`, `artist_id`);
 

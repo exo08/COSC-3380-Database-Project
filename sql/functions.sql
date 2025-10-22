@@ -252,4 +252,33 @@ BEGIN
   VALUES(p_artwork_id, p_artist_id, p_role);
 END$$
 
+CREATE PROCEDURE CreateExhibitionArtwork(
+  IN p_artwork_id int,
+  IN p_location_id int,
+  IN p_exhibition_id int,
+  IN p_start_view_date date,
+  IN p_end_view_date date,
+  OUT p_exhibition_art_id int
+)
+
+BEGIN
+  INSERT INTO EXHIBITION_ARTWORK(artwork_id, location_id, exhibition_id, start_view_date, end_view_date)
+  VALUES(p_artwork_id, p_location_id, p_exhibition_id, p_start_view_date, p_end_view_date)
+  SET p_exhibition_art_id = LAST_INSERT_ID();
+END$$
+
+CREATE PROCEDURE CreateSaleItem(
+  IN p_sale_id int,
+  IN p_item_id int,
+  IN p_quantity int,
+  IN p_price_at_sale decimal(6,2),
+  OUT p_sale_item_id int
+)
+
+BEGIN
+  INSERT INTO SALE_ITEM(sale_id, item_id, quantity, price_at_sale)
+  VALUES(p_sale_id, p_item_id, p_quantity, p_price_at_sale)
+  SET p_sale_item_id = LAST_INSERT_ID();
+END$$
+
 DELIMITER ;
