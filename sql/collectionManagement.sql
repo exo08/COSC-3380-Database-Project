@@ -1,1 +1,15 @@
 USING museumdb
+
+DELIMITER $$
+
+CREATE PROCEDURE GetFullArtworkCatalog()
+BEGIN   
+    SELECT ARTWORK.title, ARTIST.first_name, ARTIST.last_name, LOCATION.name, ARTWORK.is_owned
+    FROM ARTWORK
+    LEFT JOIN ARTWORK_CREATOR ON ARTWORK_CREATOR.artwork_id = ARTWORK.artwork_id
+    LEFT JOIN ARTIST ON ARTIST.artist_id = ARTWORK_CREATOR.artist_id
+    LEFT JOIN LOCATION ON LOCATION.location_id = ARTWORK.location_id
+    ORDER BY ARTWORK.title;
+END$$
+
+DELIMITER ;
