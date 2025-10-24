@@ -69,4 +69,16 @@ BEGIN
     WHERE ARTWORK.creation_year >= lowerYear AND ARTWORK.creation_year <= upperYear
     ORDER BY ARTWORK.creation_year, ARTWORK.title;
 END$$
+
+
+--Lists all artwork without a location (potential issue report)
+CREATE PROCEDURE GetUnlocatedArtworks()
+BEGIN
+    SELECT ARTWORK.artwork_id, ARTWORK.title, ARTIST.artist_id, ARTIST.first_name, ARTIST.last_name
+    FROM ARTWORK
+    LEFT JOIN ARTWORK_CREATOR ON ARTWORK.artwork_id = ARTWORK_CREATOR.artwork_id
+    LEFT JOIN ARTIST ON ARTWORK_CREATOR.artist_id = ARTIST.artist_id
+    WHERE ARTWORK.location_id IS NULL
+    ORDER BY ARTWORK.artwork_id;
+END$$
 DELIMITER ;
