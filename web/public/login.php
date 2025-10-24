@@ -96,7 +96,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                         <div class="text-center">
                             <p class="mb-2"><strong>Test Accounts:</strong></p>
                             <small class="text-muted d-block">Admin: <code>admin</code> / <code>admin123</code></small>
-                            <small class="text-muted d-block">Staff: <code>staff</code> / <code>staff123</code></small>
+                            <small class="text-muted d-block">Curator: <code>curator</code> / <code>curator123</code></small>
+                            <small class="text-muted d-block">Shop Staff: <code>shopstaff</code> / <code>shop123</code></small>
+                            <small class="text-muted d-block">Event Staff: <code>eventstaff</code> / <code>event123</code></small>
                             <small class="text-muted d-block">Member: <code>member</code> / <code>member123</code></small>
                         </div>
                         
