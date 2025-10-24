@@ -54,4 +54,19 @@ BEGIN
     WHERE ARTWORK.medium = p_medium
     ORDER BY ARTWORK.title;
 END$$
+
+
+--This takes 2 integer values for which year, and outputs all artworks that were created between those years
+CREATE PROCEDURE ArtworkByPeriod(
+    IN lowerYear int,
+    IN upperYear int
+)
+BEGIN
+    SELECT ARTWORK.artwork_id, ARTWORK.creation_year, ARTWORK.title, ARTIST.artist_id, ARTIST.first_name, ARTIST.last_name
+    FROM ARTWORK
+    LEFT JOIN ARTWORK_CREATOR ON ARTWORK.artwork_id = ARTWORK_CREATOR.artwork_id
+    LEFT JOIN ARTIST ON ARTWORK_CREATOR.artist_id = ARTIST.artist_id
+    WHERE ARTWORK.creation_year >= lowerYear AND ARTWORK.creation_year <= upperYear
+    ORDER BY ARTWORK.creation_year, ARTWORK.title;
+END$$
 DELIMITER ;
