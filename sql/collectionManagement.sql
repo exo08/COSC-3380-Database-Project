@@ -81,4 +81,16 @@ BEGIN
     WHERE ARTWORK.location_id IS NULL
     ORDER BY ARTWORK.artwork_id;
 END$$
+
+
+--Takes a name and finds all artworks with names similar to it and returns the dimensions as well
+CREATE PROCEDURE GetDimensions(
+    IN p_title varchar(255)
+)
+BEGIN
+    SELECT ARTWORK.artwork_id, ARTWORK.title, ARTWORK.height, ARTWORK.width, ARTWORK.depth
+    FROM ARTWORK
+    WHERE ARTWORK.title LIKE CONCAT('%', p_title, '%')
+    ORDER BY ARTWORK.title;
+END$$
 DELIMITER ;
