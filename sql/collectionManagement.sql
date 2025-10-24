@@ -24,4 +24,20 @@ BEGIN
     WHERE p_title IS NULL OR title LIKE CONCAT('%', p_title, '%')
     ORDER BY title;
 END$$
+
+
+--This function takes 2 inputs for first and last name, and outputs all artwork created by the artist(s)
+--It will show all artist ids, artwork ids, and titles for the given first and last name
+CREATE PROCEDURE ArtworkByArtist(
+    IN p_first_name varchar(255),
+    IN p_last_name varchar(255)
+)
+BEGIN
+    SELECT ARTIST.artist_id, ARTWORK.artwork_id, ARTWORK.title
+    FROM ARTIST
+    LEFT JOIN ARTWORK_CREATOR ON ARTIST.artist_id = ARTWORK_CREATOR.artist_id
+    LEFT JOIN ARTWORK ON ARTWORK_CREATOR.artwork_id = ARTWORK.artwork_id
+    WHERE ARTIST.first_name = p_first_name AND ARTIST.last_name = p_last_name
+    ORDER BY ARTIST.artist_id, ARTWORK.title;
+END$$
 DELIMITER ;
