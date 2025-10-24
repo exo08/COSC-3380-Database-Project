@@ -40,4 +40,18 @@ BEGIN
     WHERE ARTIST.first_name = p_first_name AND ARTIST.last_name = p_last_name
     ORDER BY ARTIST.artist_id, ARTWORK.title;
 END$$
+
+
+--This takes an integer value for the medium and returns all art and respective artists that uses that medium
+CREATE PROCEDURE ArtworkByMedium(
+    IN p_medium int
+)
+BEGIN
+    SELECT ARTWORK.artwork_id, ARTWORK.title, ARTIST.artist_id, ARTIST.first_name, ARTIST.last_name
+    FROM ARTWORK
+    LEFT JOIN ARTWORK_CREATOR ON ARTWORK.artwork_id = ARTWORK_CREATOR.artwork_id
+    LEFT JOIN ARTIST ON ARTWORK_CREATOR.artist_id = ARTIST.artist_id
+    WHERE ARTWORK.medium = p_medium
+    ORDER BY ARTWORK.title;
+END$$
 DELIMITER ;
