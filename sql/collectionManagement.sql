@@ -12,4 +12,16 @@ BEGIN
     ORDER BY ARTWORK.title;
 END$$
 
+--p_title IS NULL will return owned/loaned status of everything if no p_title provided, and title LIKE CONCAT(...) will return
+--similar results as what is searched (exact match not required. If search for mona lisa but database only
+--contains Mona Lisa, it will return Mona Lisa even though the search wasn't exact)
+CREATE PROCEDURE OwnedOrLoaned(
+    IN p_title varchar(255)
+)
+BEGIN
+    SELECT artwork_id, title, is_owned
+    FROM ARTWORK
+    WHERE p_title IS NULL OR title LIKE CONCAT('%', p_title, '%')
+    ORDER BY title;
+END$$
 DELIMITER ;
