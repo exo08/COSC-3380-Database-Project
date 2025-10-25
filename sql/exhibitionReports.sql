@@ -55,4 +55,13 @@ BEGIN
 END$$
 
 
+--Gets all exhibitions in order of start date
+CREATE PROCEDURE GetExhibitionTimeline()
+BEGIN
+    SELECT EXHIBITION.exhibition_id, EXHIBITION.title, EXHIBITION.start_date, EXHIBITION.end_date
+    FROM EXHIBITION
+    ORDER BY EXHIBITION.start_date;
+END$$
+
+
 DELIMITER ;
