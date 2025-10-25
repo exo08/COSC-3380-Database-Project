@@ -82,4 +82,15 @@ BEGIN
     GROUP BY SHOP_ITEM.category;
 END$$
 
+
+--Lists total amounts spent by every member
+CREATE PROCEDURE GetMemberSales()
+BEGIN
+    SELECT SALE.member_id, SUM(SALE.total_amount - SALE.discount_amount) AS member_spending
+    FROM SALE
+    WHERE SALE.member_id IS NOT NULL
+    GROUP BY SALE.member_id
+    ORDER BY SALE.member_id;
+END$$
+
 DELIMITER ;
