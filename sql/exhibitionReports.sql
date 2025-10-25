@@ -27,4 +27,19 @@ BEGIN
     ORDER BY ARTWORK.title;
 END$$
 
+
+--Returns the number of tickets sold for specified exhibition and number of people who actually showed up
+CREATE PROCEDURE GetExhibitionAttendance(
+    IN p_title varchar(255)
+)
+BEGIN
+    SELECT COUNT(TICKET.ticket_id) AS Total_tickets_sold, SUM(CASE WHEN TICKET.checked_in = 1 THEN 1 ELSE 0 END) AS Total_checked_in
+    FROM EXHIBITION
+    LEFT JOIN EVENT ON EXHIBITION.exhibition_id = EVENT.exhibition_id
+    LEFT JOIN TICKET ON EVENT.event_id = TICKET.event_id
+    WHERE EXHIBITION.title = p_title
+    GROUP BY EXHIBITION.exhibition_id;
+END$$
+
+
 DELIMITER ;
