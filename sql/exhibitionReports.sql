@@ -1,4 +1,4 @@
-USING museumdb
+USE u452501794_MuseumDB;
 
 DELIMITER $$
 
