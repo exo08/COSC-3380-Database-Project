@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/permissions.php';
@@ -12,29 +16,27 @@ $db = db();
 $success = '';
 $error = '';
 
-// Handle Delete
+// Handle Deleteadmin
 if (isset($_POST['delete_artwork'])) {
     requirePermission('delete_artwork');
     $artwork_id = intval($_POST['artwork_id']);
     
-    // Using direct SQL (no DELETE stored procedure exists)
-    // this will cascade delete from ARTWORK_CREATOR due to foreign key constraints
-    if ($db->query("DELETE FROM ARTWORK WHERE artwork_id = $artwork_id")) {
-        $success = 'Artwork deleted successfully!';
-        
-        // Log the activity
-        if (function_exists('logActivity')) {
+    try {
+        if ($db->query("DELETE FROM ARTWORK WHERE artwork_id = $artwork_id")) {
+            $success = 'Artwork deleted successfully!';
             logActivity('artwork_deleted', 'ARTWORK', $artwork_id, "Deleted artwork ID: $artwork_id");
+        } else {
+            $error = 'Error deleting artwork: ' . $db->error;
         }
-    } else {
-        $error = 'Error deleting artwork: ' . $db->error;
+    } catch (Exception $e) {
+        $error = 'Error deleting artwork: ' . $e->getMessage();
     }
 }
 
 // Handle add/edit
 if (isset($_POST['save_artwork'])) {
     $artwork_id = !empty($_POST['artwork_id']) ? intval($_POST['artwork_id']) : null;
-    $title = $_POST['title'];
+    $title = $_POST['title'] ?? '';
     $creation_year = !empty($_POST['creation_year']) ? intval($_POST['creation_year']) : null;
     $medium = !empty($_POST['medium']) ? intval($_POST['medium']) : null;
     $height = !empty($_POST['height']) ? floatval($_POST['height']) : null;
@@ -42,94 +44,103 @@ if (isset($_POST['save_artwork'])) {
     $depth = !empty($_POST['depth']) ? floatval($_POST['depth']) : null;
     $is_owned = isset($_POST['is_owned']) ? 1 : 0;
     $location_id = !empty($_POST['location_id']) ? intval($_POST['location_id']) : null;
-    $description = $_POST['description'];
+    $description = $_POST['description'] ?? '';
     
-    if ($artwork_id) {
-        // Update existing, using direct SQL (no UPDATE procedure exists)
-        requirePermission('edit_artwork');
-        
-        $stmt = $db->prepare("UPDATE ARTWORK SET 
-                title = ?,
-                creation_year = ?,
-                medium = ?,
-                height = ?,
-                width = ?,
-                depth = ?,
-                is_owned = ?,
-                location_id = ?,
-                description = ?
-                WHERE artwork_id = ?");
-        
-        $stmt->bind_param("siiiddiisi", $title, $creation_year, $medium, $height, $width, $depth, $is_owned, $location_id, $description, $artwork_id);
-        
-        if ($stmt->execute()) {
-            $success = 'Artwork updated successfully!';
-        } else {
-            $error = 'Error updating artwork: ' . $db->error;
-        }
-    } else {
-        // Insert new - using CreateArtwork stored procedure
-        requirePermission('add_artwork');
-        
-        // Call stored procedure with OUT parameter
-        $stmt = $db->prepare("CALL CreateArtwork(?, ?, ?, ?, ?, ?, ?, ?, ?, @new_artwork_id)");
-        $stmt->bind_param("siidddiss", $title, $creation_year, $medium, $height, $width, $depth, $is_owned, $location_id, $description);
-        
-        if ($stmt->execute()) {
-            // Get the OUT parameter value
-            $result = $db->query("SELECT @new_artwork_id as artwork_id");
-            $new_artwork = $result->fetch_assoc();
-            $new_artwork_id = $new_artwork['artwork_id'];
+    try {
+        if ($artwork_id) {
+            // Update existing
+            requirePermission('edit_artwork');
             
-            $success = "Artwork added successfully! (ID: $new_artwork_id)";
+            $stmt = $db->prepare("UPDATE ARTWORK SET 
+                    title = ?,
+                    creation_year = ?,
+                    medium = ?,
+                    height = ?,
+                    width = ?,
+                    depth = ?,
+                    is_owned = ?,
+                    location_id = ?,
+                    description = ?
+                    WHERE artwork_id = ?");
             
-            // Log the activity
-            if (function_exists('logActivity')) {
-                logActivity('artwork_created', 'ARTWORK', $new_artwork_id, "Created artwork: $title");
+            $stmt->bind_param("siiiddiisi", $title, $creation_year, $medium, $height, $width, $depth, $is_owned, $location_id, $description, $artwork_id);
+            
+            if ($stmt->execute()) {
+                $success = 'Artwork updated successfully!';
+                logActivity('artwork_updated', 'ARTWORK', $artwork_id, "Updated artwork: $title");
+            } else {
+                $error = 'Error updating artwork: ' . $db->error;
             }
         } else {
-            $error = 'Error adding artwork: ' . $db->error;
+            // Insert new
+            requirePermission('add_artwork');
+            
+            $stmt = $db->prepare("CALL CreateArtwork(?, ?, ?, ?, ?, ?, ?, ?, ?, @new_artwork_id)");
+            $stmt->bind_param("siidddiss", $title, $creation_year, $medium, $height, $width, $depth, $is_owned, $location_id, $description);
+            
+            if ($stmt->execute()) {
+                $result = $db->query("SELECT @new_artwork_id as artwork_id");
+                $new_artwork = $result->fetch_assoc();
+                $new_artwork_id = $new_artwork['artwork_id'];
+                
+                $success = "Artwork added successfully! (ID: $new_artwork_id)";
+                logActivity('artwork_created', 'ARTWORK', $new_artwork_id, "Created artwork: $title");
+            } else {
+                $error = 'Error adding artwork: ' . $db->error;
+            }
+            
+            if (isset($stmt)) $stmt->close();
         }
-        
-        $stmt->close();
+    } catch (Exception $e) {
+        $error = 'Error saving artwork: ' . $e->getMessage();
     }
 }
 
-// Get all artworks, using direct query (could use GetFullArtworkCatalog but this has more fields)
-$artworks = $db->query("
-    SELECT a.*, l.name as location_name,
-           GROUP_CONCAT(CONCAT(ar.first_name, ' ', ar.last_name) SEPARATOR ', ') as artist_names
-    FROM ARTWORK a
-    LEFT JOIN LOCATION l ON a.location_id = l.location_id
-    LEFT JOIN ARTWORK_CREATOR ac ON a.artwork_id = ac.artwork_id
-    LEFT JOIN ARTIST ar ON ac.artist_id = ar.artist_id
-    GROUP BY a.artwork_id
-    ORDER BY a.title
-");
-
-if ($artworks) {
-    $artworks = $artworks->fetch_all(MYSQLI_ASSOC);
-} else {
+// Get all artworks
+try {
+    $artworks_result = $db->query("
+        SELECT a.*, l.name as location_name,
+               GROUP_CONCAT(CONCAT(ar.first_name, ' ', ar.last_name) SEPARATOR ', ') as artist_names
+        FROM ARTWORK a
+        LEFT JOIN LOCATION l ON a.location_id = l.location_id
+        LEFT JOIN ARTWORK_CREATOR ac ON a.artwork_id = ac.artwork_id
+        LEFT JOIN ARTIST ar ON ac.artist_id = ar.artist_id
+        GROUP BY a.artwork_id
+        ORDER BY a.title
+    ");
+    
+    if ($artworks_result) {
+        $artworks = $artworks_result->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $artworks = [];
+        $error = 'Error loading artworks: ' . $db->error;
+    }
+} catch (Exception $e) {
     $artworks = [];
-    $error = 'Error loading artworks: ' . $db->error;
+    $error = 'Error loading artworks: ' . $e->getMessage();
 }
 
 // Get locations for dropdown
-$locations = $db->query("SELECT location_id, name FROM LOCATION ORDER BY name")->fetch_all(MYSQLI_ASSOC);
+try {
+    $locations_result = $db->query("SELECT location_id, name FROM LOCATION ORDER BY name");
+    $locations = $locations_result ? $locations_result->fetch_all(MYSQLI_ASSOC) : [];
+} catch (Exception $e) {
+    $locations = [];
+}
 
 include __DIR__ . '/../templates/layout_header.php';
 ?>
 
 <?php if ($success): ?>
     <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle"></i> <?= $success ?>
+        <i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
 
 <?php if ($error): ?>
     <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-triangle"></i> <?= $error ?>
+        <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
@@ -149,6 +160,9 @@ include __DIR__ . '/../templates/layout_header.php';
         <h5 class="mb-0"><i class="bi bi-palette"></i> All Artworks (<?= count($artworks) ?>)</h5>
     </div>
     <div class="card-body">
+        <?php if (empty($artworks)): ?>
+            <p class="text-muted">No artworks found. Add your first artwork using the button above!</p>
+        <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -165,10 +179,10 @@ include __DIR__ . '/../templates/layout_header.php';
                 <tbody>
                     <?php foreach ($artworks as $artwork): ?>
                     <tr>
-                        <td><?= $artwork['artwork_id'] ?></td>
+                        <td><?= htmlspecialchars($artwork['artwork_id']) ?></td>
                         <td><strong><?= htmlspecialchars($artwork['title']) ?></strong></td>
                         <td><?= htmlspecialchars($artwork['artist_names'] ?? 'Unknown') ?></td>
-                        <td><?= $artwork['creation_year'] ?? '-' ?></td>
+                        <td><?= htmlspecialchars($artwork['creation_year'] ?? '-') ?></td>
                         <td><?= htmlspecialchars($artwork['location_name'] ?? 'Not set') ?></td>
                         <td>
                             <?php if ($artwork['is_owned']): ?>
@@ -179,13 +193,13 @@ include __DIR__ . '/../templates/layout_header.php';
                         </td>
                         <td>
                             <?php if (hasPermission('edit_artwork')): ?>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editArtwork(<?= htmlspecialchars(json_encode($artwork)) ?>)">
+                            <button class="btn btn-sm btn-outline-primary" onclick='editArtwork(<?= json_encode($artwork, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <?php endif; ?>
                             
                             <?php if (hasPermission('delete_artwork')): ?>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteArtwork(<?= $artwork['artwork_id'] ?>, '<?= htmlspecialchars($artwork['title']) ?>')">
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteArtwork(<?= $artwork['artwork_id'] ?>, '<?= htmlspecialchars($artwork['title'], ENT_QUOTES) ?>')">
                                 <i class="bi bi-trash"></i>
                             </button>
                             <?php endif; ?>
@@ -195,10 +209,11 @@ include __DIR__ . '/../templates/layout_header.php';
                 </tbody>
             </table>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- add/edit -->
+<!-- add/edit modal -->
 <div class="modal fade" id="artworkModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -319,7 +334,7 @@ function clearForm() {
 function editArtwork(artwork) {
     document.getElementById('modalTitle').textContent = 'Edit Artwork';
     document.getElementById('artwork_id').value = artwork.artwork_id;
-    document.getElementById('title').value = artwork.title;
+    document.getElementById('title').value = artwork.title || '';
     document.getElementById('creation_year').value = artwork.creation_year || '';
     document.getElementById('height').value = artwork.height || '';
     document.getElementById('width').value = artwork.width || '';

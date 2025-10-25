@@ -214,7 +214,7 @@ include __DIR__ . '/templates/layout_header.php';
             <div class="card-body">
                 <?php if ($_SESSION['user_type'] === 'curator'): ?>
                     <div class="d-grid gap-2">
-                        <a href="/curator/artwork.php" class="btn btn-outline-primary text-start">
+                        <a href="/curator/artworks.php" class="btn btn-outline-primary text-start">
                             <i class="bi bi-plus-circle"></i> Add New Artwork
                         </a>
                         <a href="/curator/exhibitions.php" class="btn btn-outline-success text-start">

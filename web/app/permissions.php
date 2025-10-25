@@ -65,8 +65,9 @@ function getAllowedMenuItems() : array {
         'admin' => [
             ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
             ['name' => 'Users', 'url' => '/admin/users.php', 'icon' => 'people'],
-            ['name' => 'Artworks', 'url' => '/admin/artworks.php', 'icon' => 'palette'],
-            ['name' => 'Exhibitions', 'url' => '/admin/exhibitions.php', 'icon' => 'building'],
+            ['name' => 'Artworks', 'url' => '/curator/artworks.php', 'icon' => 'palette'],
+            ['name' => 'Artists', 'url' => '/curator/artists.php', 'icon' => 'brush'],
+            ['name' => 'Exhibitions', 'url' => '/curator/exhibitions.php', 'icon' => 'building'],
             ['name' => 'Events', 'url' => '/admin/events.php', 'icon' => 'calendar-event'],
             ['name' => 'Shop', 'url' => '/admin/shop.php', 'icon' => 'shop'],
             ['name' => 'Reports', 'url' => '/admin/reports.php', 'icon' => 'graph-up'],
