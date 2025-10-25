@@ -43,4 +43,16 @@ BEGIN
     ORDER BY DONATION.donation_date;
 END$$
 
+
+--returns top 10 donors
+CREATE PROCEDURE GetTopDonors()
+BEGIN
+    SELECT DONOR.donor_id, DONOR.first_name, DONOR.last_name, DONOR.organization_name, SUM(DONATION.amount) AS total
+    FROM DONATION
+    LEFT JOIN DONOR ON DONATION.donor_id = DONOR.donor_id
+    GROUP BY DONOR.donor_id
+    ORDER BY total DESC
+    LIMIT 10;
+END$$
+
 DELIMITER ;
