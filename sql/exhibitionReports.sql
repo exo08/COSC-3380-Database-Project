@@ -42,4 +42,17 @@ BEGIN
 END$$
 
 
+--Outputs all exhibitions curated by specified staff member
+CREATE PROCEDURE GetCuratorPortfolio(
+    IN p_id int
+)
+BEGIN
+    SELECT EXHIBITION.exhibition_id, EXHIBITION.title, EXHIBITION.start_date, EXHIBITION.end_date
+    FROM STAFF
+    LEFT JOIN EXHIBITION ON STAFF.staff_id = EXHIBITION.curator_id
+    WHERE STAFF.staff_id = p_id
+    ORDER BY EXHIBITION.start_date;
+END$$
+
+
 DELIMITER ;
