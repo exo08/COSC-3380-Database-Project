@@ -55,4 +55,17 @@ BEGIN
     LIMIT 10;
 END$$
 
+
+--returns how many of a certain product has been sold and total revenue from it
+CREATE PROCEDURE GetRevenueByItem(
+    IN p_id int
+)
+BEGIN
+    SELECT SHOP_ITEM.item_id, SHOP_ITEM.item_name, SUM(SALE_ITEM.quantity) AS number_sold, SUM(SALE_ITEM.quantity * SALE_ITEM.price_at_sale) AS total_revenue
+    FROM SHOP_ITEM
+    LEFT JOIN SALE_ITEM ON SHOP_ITEM.item_id = SALE_ITEM.item_id
+    WHERE SHOP_ITEM.item_id = p_id
+    GROUP BY SHOP_ITEM.item_id;
+END$$
+
 DELIMITER ;
