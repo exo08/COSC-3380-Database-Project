@@ -14,4 +14,33 @@ BEGIN
     ORDER BY ACQUISITION.acquisition_date;
 END$$
 
+
+--Gets all donations from a specified human donor
+CREATE PROCEDURE GetHumanDonorSummary(
+    IN p_first_name varchar(255),
+    IN p_last_name varchar(255),
+    IN p_email varchar(255)
+)
+BEGIN
+    SELECT DONATION.donation_id, DONATION.donation_date, DONATION.amount, DONATION.purpose
+    FROM DONOR
+    LEFT JOIN DONATION ON DONOR.donor_id = DONATION.donor_id
+    WHERE DONOR.first_name = p_first_name AND DONOR.last_name = p_last_name AND DONOR.email = p_email
+    ORDER BY DONATION.donation_date;
+END$$
+
+
+--Gets all donations from a specified organization
+CREATE PROCEDURE GetOrgDonorSummary(
+    IN p_organization_name varchar(255),
+    IN p_email varchar(255)
+)
+BEGIN
+    SELECT DONATION.donation_id, DONATION.donation_date, DONATION.amount, DONATION.purpose
+    FROM DONOR
+    LEFT JOIN DONATION ON DONOR.donor_id = DONATION.donor_id
+    WHERE DONOR.organization_name = p_organization_name AND DONOR.email = p_email
+    ORDER BY DONATION.donation_date;
+END$$
+
 DELIMITER ;
