@@ -93,4 +93,15 @@ BEGIN
     ORDER BY SALE.member_id;
 END$$
 
+
+--Lists total amounts spent by every visitor
+CREATE PROCEDURE GetVisitorSales()
+BEGIN
+    SELECT SALE.visitor_id, SUM(SALE.total_amount - SALE.discount_amount) AS visitor_spending
+    FROM SALE
+    WHERE SALE.visitor_id IS NOT NULL
+    GROUP BY SALE.visitor_id
+    ORDER BY SALE.visitor_id;
+END$$
+
 DELIMITER ;
