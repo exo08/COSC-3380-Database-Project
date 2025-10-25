@@ -14,4 +14,13 @@ BEGIN
 END$$
 
 
+--Gets all members who's memberships expire in 7 days or less AND they do not have auto-renew
+CREATE PROCEDURE GetExpiringMembers()
+BEGIN
+    SELECT MEMBER.member_id, MEMBER.first_name, MEMBER.last_name, MEMBER.email, MEMBER.membership_type
+    FROM MEMBER
+    WHERE MEMBER.auto_renew = 0 AND DATEDIFF(MEMBER.expiration_date, CURDATE()) BETWEEN 0 AND 7
+    ORDER BY MEMBER.member_id;
+END$$
+
 DELIMITER ;
