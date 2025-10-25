@@ -118,3 +118,25 @@ function getRoleDisplayName(string $role): string {
 
     return $names[$role] ?? ucfirst($role);
 }
+
+// log user activity
+function logActivity(string $action_type, ?string $table_name = null, ?int $record_id = null, ?string $description = null): bool {
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    
+    require_once __DIR__ . '/db.php';
+    $db = db();
+    
+    $user_id = $_SESSION['user_id'];
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    
+    $stmt = $db->prepare("
+        INSERT INTO ACTIVITY_LOG (user_id, action_type, table_name, record_id, description, ip_address)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    
+    $stmt->bind_param("ississ", $user_id, $action_type, $table_name, $record_id, $description, $ip_address);
+    
+    return $stmt->execute();
+}

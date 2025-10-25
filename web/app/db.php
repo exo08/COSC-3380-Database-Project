@@ -3,7 +3,7 @@ function db(): mysqli {
     static $connection = null;
     if ($connection) return $connection;
 
-    // Load config file - app folder is in htdocs
+    // Load config file
     $config = require __DIR__ . '/config.php';
 
     // Create mysqli connection
