@@ -33,6 +33,33 @@ if (isset($_POST['delete_artwork'])) {
     }
 }
 
+// Handle create new artist inline
+if (isset($_POST['create_inline_artist'])) {
+    requirePermission('add_artist');
+    $first_name = $_POST['new_artist_first_name'] ?? '';
+    $last_name = $_POST['new_artist_last_name'] ?? '';
+    $birth_year = !empty($_POST['new_artist_birth_year']) ? intval($_POST['new_artist_birth_year']) : null;
+    $nationality = $_POST['new_artist_nationality'] ?? '';
+    
+    try {
+        $stmt = $db->prepare("CALL CreateArtist(?, ?, ?, NULL, ?, '', @new_artist_id)");
+        $stmt->bind_param('ssis', $first_name, $last_name, $birth_year, $nationality);
+        
+        if ($stmt->execute()) {
+            $result = $db->query("SELECT @new_artist_id as artist_id");
+            $new_artist = $result->fetch_assoc();
+            $new_artist_id = $new_artist['artist_id'];
+            $success = "Artist created successfully! (ID: $new_artist_id). Now you can add your artwork.";
+            logActivity('artist_created', 'ARTIST', $new_artist_id, "Quick-created artist: $first_name $last_name");
+        } else {
+            $error = 'Error creating artist: ' . $db->error;
+        }
+        if (isset($stmt)) $stmt->close();
+    } catch (Exception $e) {
+        $error = 'Error creating artist: ' . $e->getMessage();
+    }
+}
+
 // Handle assign to exhibition
 if (isset($_POST['assign_to_exhibition'])) {
     requirePermission('edit_artwork');
@@ -89,8 +116,13 @@ if (isset($_POST['save_artwork'])) {
     $is_owned = isset($_POST['is_owned']) ? 1 : 0;
     $location_id = !empty($_POST['location_id']) ? intval($_POST['location_id']) : null;
     $description = $_POST['description'] ?? '';
+    $artist_ids = $_POST['artist_ids'] ?? [];
+    $artist_role = $_POST['artist_role'] ?? 'Creator';
     
     try {
+        // Start transaction
+        $db->begin_transaction();
+        
         if ($artwork_id) {
             // Update existing
             requirePermission('edit_artwork');
@@ -110,10 +142,28 @@ if (isset($_POST['save_artwork'])) {
             $stmt->bind_param("siiiddiisi", $title, $creation_year, $medium, $height, $width, $depth, $is_owned, $location_id, $description, $artwork_id);
             
             if ($stmt->execute()) {
+                $stmt->close();
+                
+                // Remove existing artist links and re-add
+                $db->query("DELETE FROM ARTWORK_CREATOR WHERE artwork_id = $artwork_id");
+                
+                // Add artist links
+                if (!empty($artist_ids)) {
+                    foreach ($artist_ids as $artist_id) {
+                        if (!empty($artist_id)) {
+                            $artist_stmt = $db->prepare("CALL MatchArtToArtist(?, ?, ?)");
+                            $artist_stmt->bind_param("iis", $artwork_id, $artist_id, $artist_role);
+                            $artist_stmt->execute();
+                            $artist_stmt->close();
+                        }
+                    }
+                }
+                
+                $db->commit();
                 $success = 'Artwork updated successfully!';
                 logActivity('artwork_updated', 'ARTWORK', $artwork_id, "Updated artwork: $title");
             } else {
-                $error = 'Error updating artwork: ' . $db->error;
+                throw new Exception('Error updating artwork: ' . $db->error);
             }
         } else {
             // Insert new
@@ -126,16 +176,29 @@ if (isset($_POST['save_artwork'])) {
                 $result = $db->query("SELECT @new_artwork_id as artwork_id");
                 $new_artwork = $result->fetch_assoc();
                 $new_artwork_id = $new_artwork['artwork_id'];
+                $stmt->close();
                 
+                // Add artist links
+                if (!empty($artist_ids)) {
+                    foreach ($artist_ids as $artist_id) {
+                        if (!empty($artist_id)) {
+                            $artist_stmt = $db->prepare("CALL MatchArtToArtist(?, ?, ?)");
+                            $artist_stmt->bind_param("iis", $new_artwork_id, $artist_id, $artist_role);
+                            $artist_stmt->execute();
+                            $artist_stmt->close();
+                        }
+                    }
+                }
+                
+                $db->commit();
                 $success = "Artwork added successfully! (ID: $new_artwork_id)";
                 logActivity('artwork_created', 'ARTWORK', $new_artwork_id, "Created artwork: $title");
             } else {
-                $error = 'Error adding artwork: ' . $db->error;
+                throw new Exception('Error adding artwork: ' . $db->error);
             }
-            
-            if (isset($stmt)) $stmt->close();
         }
     } catch (Exception $e) {
+        $db->rollback();
         $error = 'Error saving artwork: ' . $e->getMessage();
     }
 }
@@ -170,6 +233,14 @@ try {
     $locations = $locations_result ? $locations_result->fetch_all(MYSQLI_ASSOC) : [];
 } catch (Exception $e) {
     $locations = [];
+}
+
+// Get artists for dropdown
+try {
+    $artists_result = $db->query("SELECT artist_id, first_name, last_name, nationality FROM ARTIST WHERE is_deleted = FALSE OR is_deleted IS NULL ORDER BY last_name, first_name");
+    $artists = $artists_result ? $artists_result->fetch_all(MYSQLI_ASSOC) : [];
+} catch (Exception $e) {
+    $artists = [];
 }
 
 // Get exhibitions for assignment dropdown
@@ -288,6 +359,53 @@ include __DIR__ . '/../templates/layout_header.php';
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Creation Year</label>
                             <input type="number" class="form-control" name="creation_year" id="creation_year" min="1" max="2099">
+                        </div>
+                    </div>
+                    
+                    <!-- Artist Selection Section -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">Artist(s)</label>
+                                <button type="button" class="btn btn-sm btn-success" onclick="addArtistField()">
+                                    <i class="bi bi-plus"></i> Add Another Artist
+                                </button>
+                            </div>
+                            
+                            <div id="artist-fields-container">
+                                <div class="artist-field-group mb-2">
+                                    <div class="row">
+                                        <div class="col-md-10">
+                                            <select class="form-select" name="artist_ids[]" id="artist_id_1">
+                                                <option value="">Select an artist...</option>
+                                                <?php foreach ($artists as $artist): ?>
+                                                    <option value="<?= $artist['artist_id'] ?>">
+                                                        <?= htmlspecialchars($artist['first_name'] . ' ' . $artist['last_name']) ?>
+                                                        <?= !empty($artist['nationality']) ? ' (' . htmlspecialchars($artist['nationality']) . ')' : '' ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeArtistField(this)" disabled>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Don't see the artist? 
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#quickArtistModal" data-bs-dismiss="modal">Create a new artist</a>
+                                </small>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <label class="form-label">Artist Role</label>
+                                <input type="text" class="form-control" name="artist_role" id="artist_role" value="Creator" placeholder="e.g., Creator, Painter, Sculptor">
+                            </div>
                         </div>
                     </div>
                     
@@ -438,7 +556,57 @@ include __DIR__ . '/../templates/layout_header.php';
     </div>
 </div>
 
+<!-- Quick Artist Creation Modal -->
+<div class="modal fade" id="quickArtistModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Quick Create Artist</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Create a new artist quickly. After creation, you can return to adding your artwork.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" name="new_artist_first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" name="new_artist_last_name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Birth Year</label>
+                            <input type="number" class="form-control" name="new_artist_birth_year" min="1" max="2099">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nationality</label>
+                            <input type="text" class="form-control" name="new_artist_nationality" placeholder="e.g., American">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#artworkModal">
+                        Back to Artwork
+                    </button>
+                    <button type="submit" name="create_inline_artist" class="btn btn-success">
+                        <i class="bi bi-person-plus"></i> Create Artist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+let artistFieldCount = 1;
 function clearForm() {
     document.getElementById('modalTitle').textContent = 'Add New Artwork';
     document.getElementById('artwork_id').value = '';
@@ -451,6 +619,33 @@ function clearForm() {
     document.getElementById('location_id').value = '';
     document.getElementById('is_owned').checked = true;
     document.getElementById('description').value = '';
+    document.getElementById('artist_role').value = 'Creator';
+    
+    // Reset artist fields to just one empty field
+    const container = document.getElementById('artist-fields-container');
+    container.innerHTML = `
+        <div class="artist-field-group mb-2">
+            <div class="row">
+                <div class="col-md-10">
+                    <select class="form-select" name="artist_ids[]" id="artist_id_1">
+                        <option value="">Select an artist...</option>
+                        <?php foreach ($artists as $artist): ?>
+                            <option value="<?= $artist['artist_id'] ?>">
+                                <?= htmlspecialchars($artist['first_name'] . ' ' . $artist['last_name']) ?>
+                                <?= !empty($artist['nationality']) ? ' (' . htmlspecialchars($artist['nationality']) . ')' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="removeArtistField(this)" disabled>
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    artistFieldCount = 1;
 }
 
 function editArtwork(artwork) {
@@ -501,6 +696,46 @@ function updateExhibitionDates() {
         document.getElementById('start_view_date').max = endDate;
         document.getElementById('end_view_date').min = startDate;
         document.getElementById('end_view_date').max = endDate;
+    }
+}
+
+// Artist field management functions
+function addArtistField() {
+    artistFieldCount++;
+    const container = document.getElementById('artist-fields-container');
+    const newField = document.createElement('div');
+    newField.className = 'artist-field-group mb-2';
+    newField.innerHTML = `
+        <div class="row">
+            <div class="col-md-10">
+                <select class="form-select" name="artist_ids[]" id="artist_id_${artistFieldCount}">
+                    <option value="">Select an artist...</option>
+                    <?php foreach ($artists as $artist): ?>
+                        <option value="<?= $artist['artist_id'] ?>">
+                            <?= htmlspecialchars($artist['first_name'] . ' ' . $artist['last_name']) ?>
+                            <?= !empty($artist['nationality']) ? ' (' . htmlspecialchars($artist['nationality']) . ')' : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger w-100" onclick="removeArtistField(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newField);
+}
+
+function removeArtistField(button) {
+    const fieldGroup = button.closest('.artist-field-group');
+    fieldGroup.remove();
+    
+    // Disable remove button on first field if it's the only one left
+    const remainingFields = document.querySelectorAll('.artist-field-group');
+    if (remainingFields.length === 1) {
+        remainingFields[0].querySelector('button').disabled = true;
     }
 }
 </script>
