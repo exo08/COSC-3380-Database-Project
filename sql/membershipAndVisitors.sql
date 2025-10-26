@@ -42,4 +42,44 @@ BEGIN
     ORDER BY customer_type, is_student;
 END$$
 
+
+--will return percentages of how many visitors come back for more than just one visit
+--example output:
+--| visit_frequency | number_of_visitors | percentage |
+--|-----------------|--------------------|-----------| 
+--| 1 visit         | 375                | 75.00      |
+--| 2 visits        | 80                 | 16.00      |
+--| 3 visits        | 25                 | 5.00       |
+--| 4 visits        | 12                 | 2.40       |
+--| 5 visits        | 5                  | 1.00       |
+--| 6+ visits       | 3                  | 0.60       |
+CREATE PROCEDURE GetVisitorFrequencyAnalysis()
+BEGIN
+    SELECT CASE
+        WHEN visit_count = 1 THEN '1 visit'
+        WHEN visit_count = 2 THEN '2 visits'
+        WHEN visit_count = 3 THEN '3 visits'
+        WHEN visit_count = 4 THEN '4 visits'
+        WHEN visit_count = 5 THEN '5 visits'
+        WHEN visit_count >= 6 THEN '6+ visits'
+    END AS visit_frequency,
+    COUNT(visitor_visits.visitor_id) AS number_of_visitors,
+    ROUND(COUNT(visitor_visits.visitor_id)*100/(SELECT COUNT(DISTINCT visitor_id) FROM TICKET WHERE visitor_id IS NOT NULL), 2) AS percentage
+    FROM (
+        SELECT TICKET.visitor_id, COUNT(TICKET.ticket_id) AS visit_count
+        FROM TICKET
+        WHERE TICKET.visitor_id IS NOT NULL
+        GROUP BY TICKET.visitor_id
+    ) AS visitor_visits
+    GROUP BY CASE
+        WHEN visit_count = 1 THEN '1 visit'
+        WHEN visit_count = 2 THEN '2 visits'
+        WHEN visit_count = 3 THEN '3 visits'
+        WHEN visit_count = 4 THEN '4 visits'
+        WHEN visit_count = 5 THEN '5 visits'
+        WHEN visit_count >= 6 THEN '6+ visits'
+    END
+    ORDER BY MIN(visit_count);
+END$$
+
 DELIMITER ;
