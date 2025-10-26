@@ -16,7 +16,7 @@ $db = db();
 $success = '';
 $error = '';
 
-// Handle Deleteadmin
+// Handle Delete
 if (isset($_POST['delete_artwork'])) {
     requirePermission('delete_artwork');
     $artwork_id = intval($_POST['artwork_id']);
@@ -30,6 +30,50 @@ if (isset($_POST['delete_artwork'])) {
         }
     } catch (Exception $e) {
         $error = 'Error deleting artwork: ' . $e->getMessage();
+    }
+}
+
+// Handle assign to exhibition
+if (isset($_POST['assign_to_exhibition'])) {
+    requirePermission('edit_artwork');
+    $artwork_id = intval($_POST['artwork_id']);
+    $exhibition_id = intval($_POST['exhibition_id']);
+    $location_id = intval($_POST['exhibition_location_id']);
+    $start_view_date = $_POST['start_view_date'] ?? '';
+    $end_view_date = $_POST['end_view_date'] ?? '';
+    
+    try {
+        // Start transaction
+        $db->begin_transaction();
+        
+        // Create the exhibition artwork record
+        $stmt = $db->prepare("CALL CreateExhibitionArtwork(?, ?, ?, ?, ?, @new_exhibition_art_id)");
+        $stmt->bind_param('iiiss', $artwork_id, $location_id, $exhibition_id, $start_view_date, $end_view_date);
+        
+        if ($stmt->execute()) {
+            $result = $db->query("SELECT @new_exhibition_art_id as exhibition_art_id");
+            $new_record = $result->fetch_assoc();
+            $stmt->close();
+            
+            // Update the artwork's location to reflect the exhibition location
+            $update_stmt = $db->prepare("UPDATE ARTWORK SET location_id = ? WHERE artwork_id = ?");
+            $update_stmt->bind_param('ii', $location_id, $artwork_id);
+            
+            if ($update_stmt->execute()) {
+                $db->commit();
+                $success = "Artwork successfully assigned to exhibition and location updated!";
+                logActivity('artwork_exhibited', 'EXHIBITION_ARTWORK', $new_record['exhibition_art_id'], "Assigned artwork $artwork_id to exhibition $exhibition_id at location $location_id");
+            } else {
+                throw new Exception('Error updating artwork location: ' . $db->error);
+            }
+            
+            $update_stmt->close();
+        } else {
+            throw new Exception('Error creating exhibition artwork: ' . $db->error);
+        }
+    } catch (Exception $e) {
+        $db->rollback();
+        $error = 'Error assigning artwork: ' . $e->getMessage();
     }
 }
 
@@ -128,6 +172,14 @@ try {
     $locations = [];
 }
 
+// Get exhibitions for assignment dropdown
+try {
+    $exhibitions_result = $db->query("SELECT exhibition_id, title, start_date, end_date FROM EXHIBITION WHERE is_deleted = FALSE OR is_deleted IS NULL ORDER BY start_date DESC");
+    $exhibitions = $exhibitions_result ? $exhibitions_result->fetch_all(MYSQLI_ASSOC) : [];
+} catch (Exception $e) {
+    $exhibitions = [];
+}
+
 include __DIR__ . '/../templates/layout_header.php';
 ?>
 
@@ -193,6 +245,9 @@ include __DIR__ . '/../templates/layout_header.php';
                         </td>
                         <td>
                             <?php if (hasPermission('edit_artwork')): ?>
+                            <button class="btn btn-sm btn-outline-success" onclick='assignToExhibition(<?= json_encode($artwork, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="Assign to Exhibition">
+                                <i class="bi bi-building"></i>
+                            </button>
                             <button class="btn btn-sm btn-outline-primary" onclick='editArtwork(<?= json_encode($artwork, JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>
                                 <i class="bi bi-pencil"></i>
                             </button>
@@ -316,6 +371,73 @@ include __DIR__ . '/../templates/layout_header.php';
     </div>
 </div>
 
+<!-- Assign to Exhibition Modal -->
+<div class="modal fade" id="exhibitionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Assign Artwork to Exhibition</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="artwork_id" id="exhibition_artwork_id">
+                    
+                    <div class="alert alert-info">
+                        <strong>Artwork:</strong> <span id="exhibition_artwork_title"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Select Exhibition *</label>
+                        <select class="form-select" name="exhibition_id" id="exhibition_id" required onchange="updateExhibitionDates()">
+                            <option value="">Choose an exhibition...</option>
+                            <?php foreach ($exhibitions as $exhibition): ?>
+                                <option value="<?= $exhibition['exhibition_id'] ?>" 
+                                        data-start="<?= $exhibition['start_date'] ?>" 
+                                        data-end="<?= $exhibition['end_date'] ?>">
+                                    <?= htmlspecialchars($exhibition['title']) ?> 
+                                    (<?= date('M d, Y', strtotime($exhibition['start_date'])) ?> - <?= date('M d, Y', strtotime($exhibition['end_date'])) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Gallery Location *</label>
+                        <select class="form-select" name="exhibition_location_id" id="exhibition_location_id" required>
+                            <option value="">Select location...</option>
+                            <?php foreach ($locations as $loc): ?>
+                                <option value="<?= $loc['location_id'] ?>"><?= htmlspecialchars($loc['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Display Date *</label>
+                            <input type="date" class="form-control" name="start_view_date" id="start_view_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Display Date *</label>
+                            <input type="date" class="form-control" name="end_view_date" id="end_view_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning" id="date-warning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i> Display dates should be within the exhibition period.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="assign_to_exhibition" class="btn btn-success">
+                        <i class="bi bi-building"></i> Assign to Exhibition
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function clearForm() {
     document.getElementById('modalTitle').textContent = 'Add New Artwork';
@@ -351,6 +473,35 @@ function deleteArtwork(id, title) {
     document.getElementById('delete_artwork_id').value = id;
     document.getElementById('deleteArtworkTitle').textContent = title;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function assignToExhibition(artwork) {
+    document.getElementById('exhibition_artwork_id').value = artwork.artwork_id;
+    document.getElementById('exhibition_artwork_title').textContent = artwork.title;
+    document.getElementById('exhibition_id').value = '';
+    document.getElementById('exhibition_location_id').value = '';
+    document.getElementById('start_view_date').value = '';
+    document.getElementById('end_view_date').value = '';
+    document.getElementById('date-warning').style.display = 'none';
+    
+    new bootstrap.Modal(document.getElementById('exhibitionModal')).show();
+}
+
+function updateExhibitionDates() {
+    const select = document.getElementById('exhibition_id');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.value) {
+        const startDate = selectedOption.getAttribute('data-start');
+        const endDate = selectedOption.getAttribute('data-end');
+        
+        document.getElementById('start_view_date').value = startDate;
+        document.getElementById('end_view_date').value = endDate;
+        document.getElementById('start_view_date').min = startDate;
+        document.getElementById('start_view_date').max = endDate;
+        document.getElementById('end_view_date').min = startDate;
+        document.getElementById('end_view_date').max = endDate;
+    }
 }
 </script>
 

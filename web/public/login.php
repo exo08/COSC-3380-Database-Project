@@ -32,6 +32,13 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
             $_SESSION['user_type'] = $user['user_type'];
             $_SESSION['email'] = $user['email'];
             
+            // Update last_login timestamp
+            $user_id = $user['user_id'];
+            $update_stmt = $db->prepare("UPDATE USER_ACCOUNT SET last_login = NOW() WHERE user_id = ?");
+            $update_stmt->bind_param("i", $user_id);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
             header('Location: /dashboard.php');
             exit;
         }else{
