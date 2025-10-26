@@ -92,3 +92,44 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- =========================================================
+-- 6. Prevent overbooking of events
+-- =========================================================
+DELIMITER $$
+
+CREATE TRIGGER trg_prevent_event_overbooking
+BEFORE INSERT ON TICKET
+FOR EACH ROW
+BEGIN
+  DECLARE current_total INT DEFAULT 0;
+  DECLARE max_capacity INT DEFAULT 0;
+  DECLARE error_message VARCHAR(255);
+  
+  -- Get current total tickets sold for this event
+  SELECT IFNULL(SUM(quantity), 0)
+  INTO current_total
+  FROM TICKET
+  WHERE event_id = NEW.event_id;
+  
+  -- Get the event's capacity
+  SELECT capacity
+  INTO max_capacity
+  FROM EVENT
+  WHERE event_id = NEW.event_id;
+  
+  -- If adding new tickets would exceed capacity, block the insert
+  IF (current_total + NEW.quantity) > max_capacity THEN
+    SET error_message = CONCAT(
+      'Overbooking prevented: Event ID ',
+      NEW.event_id,
+      ' is already at or above capacity (',
+      max_capacity, ' tickets).'
+    );
+    
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = error_message;
+  END IF;
+END$$
+
+DELIMITER ;
