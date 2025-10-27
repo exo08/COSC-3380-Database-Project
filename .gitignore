@@ -1,1 +1,5 @@
 web/app/config.php
+web/public/diag.php
+.vscode/
+.idea/
+*.swp

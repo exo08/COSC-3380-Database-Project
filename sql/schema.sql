@@ -205,6 +205,32 @@ CREATE TABLE `SALE_ITEM` (
 
 ALTER TABLE `SALE_ITEM` AUTO_INCREMENT=1001;
 
+CREATE TABLE `USER_ACCOUNT` (
+  `user_id` int PRIMARY KEY AUTO_INCREMENT,
+  `username` varchar(100) UNIQUE NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `email` varchar(255) UNIQUE NOT NULL,
+  `user_type` ENUM('admin', 'curator', 'shop_staff', 'event_staff', 'member') NOT NULL,
+  `linked_id` int,
+  `is_active` bool DEFAULT TRUE,
+  `last_login` datetime,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE `USER_ACCOUNT` AUTO_INCREMENT=1001;
+
+CREATE TABLE `ACTIVITY_LOG` (
+  `log_id` int PRIMARY KEY AUTO_INCREMENT,
+  `user_id` int,
+  `action_type` varchar(50) NOT NULL,
+  `table_name` varchar(50),
+  `record_id` int,
+  `description` text,
+  `ip_address` varchar(45),
+  `timestamp` datetime DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `USER_ACCOUNT` (`user_id`) ON DELETE SET NULL
+);
+
 CREATE UNIQUE INDEX `ARTWORK_CREATOR_index_0` ON `ARTWORK_CREATOR` (`artwork_id`, `artist_id`);
 
 CREATE INDEX `ARTWORK_CREATOR_index_1` ON `ARTWORK_CREATOR` (`artist_id`);

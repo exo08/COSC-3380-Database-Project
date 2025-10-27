@@ -1,0 +1,8 @@
+# Redirect to HTTPS (once SSL is active)
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Basic security rules
+Options -Indexes
+php_value date.timezone America/Chicago
