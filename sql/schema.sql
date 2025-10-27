@@ -210,7 +210,7 @@ CREATE TABLE `USER_ACCOUNT` (
   `username` varchar(100) UNIQUE NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `email` varchar(255) UNIQUE NOT NULL,
-  `user_type` ENUM('staff', 'member', 'admin') NOT NULL,
+  `user_type` ENUM('admin', 'curator', 'shop_staff', 'event_staff', 'member') NOT NULL,
   `linked_id` int,
   `is_active` bool DEFAULT TRUE,
   `last_login` datetime,
