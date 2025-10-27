@@ -111,8 +111,8 @@ BEGIN
   INTO current_total
   FROM TICKET
   WHERE event_id = NEW.event_id;
-  
-  -- Get the event's capacity
+
+  -- Get the event’s capacity
   SELECT capacity
   INTO max_capacity
   FROM EVENT
