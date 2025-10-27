@@ -61,6 +61,7 @@ if (isset($_POST['create_user'])) {
             $password_hash = hash('sha256', $password);
             $linked_id = null;
             
+            // submit handler (send to server)
             // Create linked record based on user type
             if ($user_type === 'member') {
                 // Create MEMBER record
@@ -85,12 +86,18 @@ if (isset($_POST['create_user'])) {
                     throw new Exception("Failed to create member: " . $db->error);
                 }
                 
-            } elseif (in_array($user_type, ['curator', 'shop_staff', 'event_staff'])) {
+            } elseif (in_array($user_type, ['curator', 'shop_staff', 'event_staff', 'admin'])) {
                 // Create STAFF record
                 $department_id = intval($_POST['department_id'] ?? 1);
                 $title = $_POST['job_title'] ?? '';
+                if($user_type === 'admin' && trim($title) === ''){ // Default title for admin
+                    $title = 'Administrator';
+                }
                 $hire_date = $_POST['hire_date'] ?? date('Y-m-d');
-                $ssn = !empty($_POST['ssn']) ? intval($_POST['ssn']) : null;
+                if(empty($_POST['ssn'])){
+                    throw new Exception('SSN is required for staff accounts.');
+                }
+                $ssn = preg_replace('/\D/', '', $_POST['ssn']); // remove non-digit characters
                 $supervisor_id = !empty($_POST['supervisor_id']) ? intval($_POST['supervisor_id']) : null;
                 $full_name = $first_name . ' ' . $last_name;
                 
@@ -108,7 +115,6 @@ if (isset($_POST['create_user'])) {
                     throw new Exception("Failed to create staff: " . $db->error);
                 }
             }
-            // Admin doesn't need a linked record (linked_id stays null)
             
             // Create USER_ACCOUNT record using CreateUser procedure
             $stmt = $db->prepare("CALL CreateUser(?, ?, ?, ?, ?, @new_user_id)");
@@ -164,17 +170,17 @@ $users_query = "
         u.*,
         CASE 
             WHEN u.user_type = 'member' THEN CONCAT(m.first_name, ' ', m.last_name)
-            WHEN u.user_type IN ('curator', 'shop_staff', 'event_staff') THEN s.name
+            WHEN u.user_type IN ('curator', 'shop_staff', 'event_staff', 'admin') THEN s.name
             ELSE NULL
         END as linked_name,
         CASE
             WHEN u.user_type = 'member' THEN m.email
-            WHEN u.user_type IN ('curator', 'shop_staff', 'event_staff') THEN s.email
+            WHEN u.user_type IN ('curator', 'shop_staff', 'event_staff', 'admin') THEN s.email
             ELSE NULL
         END as linked_email
     FROM USER_ACCOUNT u
     LEFT JOIN MEMBER m ON u.user_type = 'member' AND u.linked_id = m.member_id
-    LEFT JOIN STAFF s ON u.user_type IN ('curator', 'shop_staff', 'event_staff') AND u.linked_id = s.staff_id
+    LEFT JOIN STAFF s ON u.user_type IN ('curator', 'shop_staff', 'event_staff', 'admin') AND u.linked_id = s.staff_id
     ORDER BY u.created_at DESC
 ";
 
@@ -454,8 +460,8 @@ include __DIR__ . '/../templates/layout_header.php';
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">SSN (Optional)</label>
-                                <input type="number" class="form-control" name="ssn" id="ssn" placeholder="123456789">
+                                <label class="form-label">SSN *</label>
+                                <input type="text" class="form-control" name="ssn" id="ssn" placeholder="123-45-6789" required pattern="\d{3}-?\d{2}-?\d{4}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Supervisor (Optional)</label>
@@ -503,7 +509,7 @@ include __DIR__ . '/../templates/layout_header.php';
                     
                     <!-- Admin note -->
                     <div class="alert alert-warning" id="admin_note" style="display: none;">
-                        <i class="bi bi-shield-exclamation"></i> <strong>Administrator Account:</strong> No additional information required. Admin accounts have full system access.
+                        <i class="bi bi-shield-exclamation"></i> <strong>Administrator Account:</strong> Admin accounts have full system access.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -574,21 +580,21 @@ function updateFormFields() {
     });
     
     // Show appropriate sections based on role
-    if (userType === 'admin') {
-        adminNote.style.display = 'block';
-    } else if (userType === 'member') {
+    if (userType === 'member') {
         personalInfoSection.style.display = 'block';
         memberFields.style.display = 'block';
         // Set required fields for member
         document.getElementById('first_name').setAttribute('required', 'required');
         document.getElementById('last_name').setAttribute('required', 'required');
-    } else if (['curator', 'shop_staff', 'event_staff'].includes(userType)) {
+    } else if (['curator', 'shop_staff', 'event_staff', 'admin'].includes(userType)) {
+        adminNote.style.display = userType === 'admin' ? 'block' : 'none';
         personalInfoSection.style.display = 'block';
         staffFields.style.display = 'block';
-        // Set required fields for staff
+        // Set required fields for staff/admin
         document.getElementById('first_name').setAttribute('required', 'required');
         document.getElementById('last_name').setAttribute('required', 'required');
         document.getElementById('department_id').setAttribute('required', 'required');
+        document.getElementById('ssn').setAttribute('required', 'required');
     }
 }
 
