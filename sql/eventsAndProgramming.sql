@@ -15,4 +15,28 @@ BEGIN
     ORDER BY EVENT.event_date;
 END$$
 
+
+--This takes an event id and gets the number of ticket holders who were present vs absent
+CREATE PROCEDURE GetEventAttendance(
+    IN p_id int
+)
+BEGIN
+    SELECT EVENT.name, SUM(CASE WHEN TICKET.checked_in=1 THEN 1 ELSE 0) AS present, SUM(CASE WHEN TICKET.checked_in =0 THEN 1 ELSE 0) AS absent
+    FROM EVENT
+    LEFT JOIN TICKET ON EVENT.event_id = TICKET.event_id
+    WHERE EVENT.event_id = p_id
+    GROUP BY EVENT.name;
+END$$
+
+
+--Gets all events where tickets are almost sold out (capacity-10 tickets at least)
+CREATE PROCEDURE GetEventsNearCapacity()
+BEGIN
+    SELECT EVENT.event_id, EVENT.name, COUNT(TICKET.ticket_id) AS tickets_sold, EVENT.capacity
+    FROM EVENT
+    LEFT JOIN TICKET ON EVENT.event_id = TICKET.event_id
+    GROUP BY EVENT.event_id, EVENT.name, EVENT.capacity
+    HAVING COUNT(TICKET.ticket_id) >= EVENT.capacity-10;
+END$$
+
 DELIMITER ;
