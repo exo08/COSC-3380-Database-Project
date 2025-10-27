@@ -645,10 +645,10 @@ table.report-table th {
                         <tr>
                             <td><strong><?= date('F Y', strtotime($row['month'] . '-01')) ?></strong></td>
                             <td class="text-center"><?= number_format($row['transaction_count']) ?></td>
-                            <td class="text-end">${= number_format($row['total_revenue'], 2) ?></td>
+                            <td class="text-end">$<?= number_format($row['total_revenue'], 2) ?></td>
                             <td class="text-end text-danger">-$<?= number_format($row['total_discounts'], 2) ?></td>
                             <td class="text-center"><?= $row['member_sales'] ?></td>
-                            <td class="text-end">${= number_format($row['avg_transaction'], 2) ?></td>
+                            <td class="text-end">$<?= number_format($row['avg_transaction'], 2) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -842,7 +842,7 @@ table.report-table th {
                             <?php foreach ($report_data['shop_revenue'] as $row): ?>
                                 <tr>
                                     <td><?= date('M Y', strtotime($row['month'] . '-01')) ?></td>
-                                    <td class="text-end">${= number_format($row['revenue'], 2) ?></td>
+                                    <td class="text-end">$<?= number_format($row['revenue'], 2) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </table>
