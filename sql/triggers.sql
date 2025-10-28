@@ -45,17 +45,24 @@ END$$
 -- =========================================================
 -- 3. Auto-renew membership on sale if eligible
 -- =========================================================
-CREATE TRIGGER trg_auto_renew_membership
-AFTER INSERT ON SALE
+
+CREATE TRIGGER trg_validate_active_member_sale
+BEFORE INSERT ON SALE
 FOR EACH ROW
 BEGIN
   IF NEW.member_id IS NOT NULL THEN
-    UPDATE MEMBER
-    SET expiration_date = DATE_ADD(expiration_date, INTERVAL 1 YEAR)
-    WHERE member_id = NEW.member_id
-      AND auto_renew = TRUE;
+    IF NOT EXISTS (
+      SELECT 1 FROM MEMBER 
+      WHERE member_id = NEW.member_id 
+      AND expiration_date >= CURDATE()
+    ) THEN
+      SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Member account is expired. Cannot apply member benefits.';
+    END IF;
   END IF;
 END$$
+
+DELIMITER ;
 
 
 -- =========================================================
