@@ -349,7 +349,6 @@ include __DIR__ . '/../templates/layout_header.php';
                             <th>Date & Time</th>
                             <th>Customer</th>
                             <th>Items</th>
-                            <th class="text-end">Subtotal</th>
                             <th class="text-end">Discount</th>
                             <th class="text-end">Total</th>
                             <th>Payment</th>
@@ -398,9 +397,6 @@ include __DIR__ . '/../templates/layout_header.php';
                                     </div>
                                 </td>
                                 <td class="text-end">
-                                    $<?= number_format($sale['subtotal'], 2) ?>
-                                </td>
-                                <td class="text-end">
                                     <?php if ($sale['discount_amount'] > 0): ?>
                                         <span class="badge bg-success">
                                             -$<?= number_format($sale['discount_amount'], 2) ?>
@@ -429,9 +425,6 @@ include __DIR__ . '/../templates/layout_header.php';
                     <tfoot class="table-light">
                         <tr>
                             <th colspan="4" class="text-end">Totals on this page:</th>
-                            <th class="text-end">
-                                $<?= number_format(array_sum(array_column($sales, 'subtotal')), 2) ?>
-                            </th>
                             <th class="text-end">
                                 -$<?= number_format(array_sum(array_column($sales, 'discount_amount')), 2) ?>
                             </th>
@@ -613,7 +606,7 @@ function displaySaleDetails(sale) {
                         <th>Item</th>
                         <th class="text-center">Quantity</th>
                         <th class="text-end">Unit Price</th>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -626,10 +619,7 @@ function displaySaleDetails(sale) {
             <div class="row">
                 <div class="col-md-6 offset-md-6">
                     <table class="table table-sm table-borderless">
-                        <tr>
-                            <td class="text-end">Subtotal:</td>
-                            <td class="text-end"><strong>$${parseFloat(sale.subtotal).toFixed(2)}</strong></td>
-                        </tr>
+                        
                         ${sale.discount_amount > 0 ? `
                         <tr class="text-success">
                             <td class="text-end">Discount:</td>
