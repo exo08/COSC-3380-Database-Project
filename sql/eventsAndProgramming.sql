@@ -18,14 +18,18 @@ END$$
 
 --This takes an event id and gets the number of ticket holders who were present vs absent
 CREATE PROCEDURE GetEventAttendance(
-    IN p_id int
+    IN p_id INT
 )
 BEGIN
-    SELECT EVENT.name, SUM(CASE WHEN TICKET.checked_in=1 THEN 1 ELSE 0) AS present, SUM(CASE WHEN TICKET.checked_in =0 THEN 1 ELSE 0) AS absent
-    FROM EVENT
-    LEFT JOIN TICKET ON EVENT.event_id = TICKET.event_id
-    WHERE EVENT.event_id = p_id
-    GROUP BY EVENT.name;
+    SELECT 
+        e.name, 
+        SUM(CASE WHEN t.checked_in = 1 THEN 1 ELSE 0 END) AS present,
+        SUM(CASE WHEN t.checked_in = 0 THEN 1 ELSE 0 END) AS absent
+    FROM `EVENT` AS e
+    LEFT JOIN `TICKET` AS t 
+        ON e.event_id = t.event_id
+    WHERE e.event_id = p_id
+    GROUP BY e.name;
 END$$
 
 

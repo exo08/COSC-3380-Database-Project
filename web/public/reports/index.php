@@ -33,11 +33,20 @@ include __DIR__ . '/../templates/layout_header.php';
                         <a href="artwork-catalog.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-book"></i> Full Artwork Catalog
                         </a>
+                        <a href="owned-or-loaned.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building"></i> Owned vs Loaned
+                        </a>
                         <a href="artwork-by-artist.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-person"></i> Artwork by Artist
                         </a>
                         <a href="artwork-by-medium.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-brush"></i> Artwork by Medium
+                        </a>
+                        <a href="artwork-by-period.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-calendar-range"></i> Artwork by Period
+                        </a>
+                        <a href="artwork-dimensions.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-rulers"></i> Artwork Dimensions
                         </a>
                         <a href="unlocated-artworks.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-exclamation-triangle"></i> Unlocated Artworks
@@ -91,6 +100,9 @@ include __DIR__ . '/../templates/layout_header.php';
                         </a>
                         <a href="curator-portfolio.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-briefcase"></i> Curator Portfolio
+                        </a>
+                        <a href="event-attendance.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-clipboard-check"></i> Event Attendance
                         </a>
                         <a href="upcoming-events.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-calendar-check"></i> Upcoming Events
