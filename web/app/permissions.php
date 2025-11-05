@@ -62,47 +62,47 @@ function getAllowedMenuItems() : array {
     $role = $_SESSION['user_type'];
 
     $menus = [
-        'admin' => [
-            ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
-            ['name' => 'Users', 'url' => '/admin/users.php', 'icon' => 'people'],
-            ['name' => 'Artworks', 'url' => '/curator/artworks.php', 'icon' => 'palette'],
-            ['name' => 'Artists', 'url' => '/curator/artists.php', 'icon' => 'brush'],
-            ['name' => 'Exhibitions', 'url' => '/curator/exhibitions.php', 'icon' => 'building'],
-            ['name' => 'Events', 'url' => '/admin/events.php', 'icon' => 'calendar-event'],
-            ['name' => 'Shop', 'url' => '/admin/shop.php', 'icon' => 'shop'],
-            ['name' => 'Reports', 'url' => '/admin/reports.php', 'icon' => 'graph-up'],
-        ],
-        'curator' => [
-            ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
-            ['name' => 'Artworks', 'url' => '/curator/artworks.php', 'icon' => 'palette'],
-            ['name' => 'Artists', 'url' => '/curator/artists.php', 'icon' => 'brush'],
-            ['name' => 'Exhibitions', 'url' => '/curator/exhibitions.php', 'icon' => 'building'],
-            ['name' => 'Acquisitions', 'url' => '/curator/acquisitions.php', 'icon' => 'cart-plus'],
-            ['name' => 'Reports', 'url' => '/curator/reports.php', 'icon' => 'graph-up'],
-        ],
-        'shop_staff' => [
-            ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
-            ['name' => 'Process Sale', 'url' => '/shop/new-sale.php', 'icon' => 'cart-check'],
-            ['name' => 'Inventory', 'url' => '/shop/inventory.php', 'icon' => 'box-seam'],
-            ['name' => 'Sales History', 'url' => '/shop/sales.php', 'icon' => 'receipt'],
-            ['name' => 'Reports', 'url' => '/shop/reports.php', 'icon' => 'graph-up'],
-        ],
-        'event_staff' => [
-            ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
-            ['name' => 'Events', 'url' => '/events/manage.php', 'icon' => 'calendar-event'],
-            ['name' => 'Check-in', 'url' => '/events/checkin.php', 'icon' => 'check-square'],
-            ['name' => 'Sell Tickets', 'url' => '/events/sell-ticket.php', 'icon' => 'ticket'],
-            ['name' => 'Reports', 'url' => '/events/reports.php', 'icon' => 'graph-up'],
-        ],
-        'member' => [
-            ['name' => 'Home', 'url' => '/index.php', 'icon' => 'house'],
-            ['name' => 'Exhibitions', 'url' => '/exhibitions.php', 'icon' => 'building'],
-            ['name' => 'Events', 'url' => '/events.php', 'icon' => 'calendar-event'],
-            ['name' => 'Gift Shop', 'url' => '/shop.php', 'icon' => 'shop'],
-            ['name' => 'My Membership', 'url' => '/member/membership.php', 'icon' => 'star'],
-            ['name' => 'My Tickets', 'url' => '/member/tickets.php', 'icon' => 'ticket'],
-        ]
-    ];
+    'admin' => [
+        ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
+        ['name' => 'Users', 'url' => '/admin/users.php', 'icon' => 'people'],
+        ['name' => 'Artworks', 'url' => '/curator/artworks.php', 'icon' => 'palette'],
+        ['name' => 'Artists', 'url' => '/curator/artists.php', 'icon' => 'brush'],
+        ['name' => 'Exhibitions', 'url' => '/curator/exhibitions.php', 'icon' => 'building'],
+        ['name' => 'Events', 'url' => '/admin/events.php', 'icon' => 'calendar-event'],
+        ['name' => 'Shop', 'url' => '/admin/shop.php', 'icon' => 'shop'],
+        ['name' => 'Reports', 'url' => '/reports/index.php', 'icon' => 'file-bar-graph'], // Changed this line
+    ],
+    'curator' => [
+        ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
+        ['name' => 'Artworks', 'url' => '/curator/artworks.php', 'icon' => 'palette'],
+        ['name' => 'Artists', 'url' => '/curator/artists.php', 'icon' => 'brush'],
+        ['name' => 'Exhibitions', 'url' => '/curator/exhibitions.php', 'icon' => 'building'],
+        ['name' => 'Acquisitions', 'url' => '/curator/acquisitions.php', 'icon' => 'cart-plus'],
+        ['name' => 'Reports', 'url' => '/reports/index.php', 'icon' => 'file-bar-graph'], // Changed this line
+    ],
+    'shop_staff' => [
+        ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
+        ['name' => 'Process Sale', 'url' => '/shop/new-sale.php', 'icon' => 'cart-check'],
+        ['name' => 'Inventory', 'url' => '/shop/inventory.php', 'icon' => 'box-seam'],
+        ['name' => 'Sales History', 'url' => '/shop/sales.php', 'icon' => 'receipt'],
+        ['name' => 'Reports', 'url' => '/reports/index.php', 'icon' => 'file-bar-graph'], // Changed this line
+    ],
+    'event_staff' => [
+        ['name' => 'Dashboard', 'url' => '/dashboard.php', 'icon' => 'speedometer2'],
+        ['name' => 'Events', 'url' => '/events/manage.php', 'icon' => 'calendar-event'],
+        ['name' => 'Check-in', 'url' => '/events/checkin.php', 'icon' => 'check-square'],
+        ['name' => 'Sell Tickets', 'url' => '/events/sell-ticket.php', 'icon' => 'ticket'],
+        ['name' => 'Reports', 'url' => '/reports/index.php', 'icon' => 'file-bar-graph'], // Changed this line
+    ],
+    'member' => [
+        ['name' => 'Home', 'url' => '/index.php', 'icon' => 'house'],
+        ['name' => 'Exhibitions', 'url' => '/exhibitions.php', 'icon' => 'building'],
+        ['name' => 'Events', 'url' => '/events.php', 'icon' => 'calendar-event'],
+        ['name' => 'Gift Shop', 'url' => '/shop.php', 'icon' => 'shop'],
+        ['name' => 'My Membership', 'url' => '/member/membership.php', 'icon' => 'star'],
+        ['name' => 'My Tickets', 'url' => '/member/tickets.php', 'icon' => 'ticket'],
+    ]
+];
 
     return $menus[$role] ?? [];
 }
