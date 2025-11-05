@@ -93,7 +93,7 @@ include __DIR__ . '/../templates/layout_header.php';
                 <div class="card-body">
                     <div class="list-group list-group-flush">
                         <a href="current-exhibitions.php" class="list-group-item list-group-item-action">
-                            <i class="bi bi-building"></i> Current Exhibitions
+                            <i class="bi bi-building"></i> Current And Upcoming Exhibitions
                         </a>
                         <a href="exhibition-attendance.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-people-fill"></i> Exhibition Attendance
