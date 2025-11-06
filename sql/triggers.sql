@@ -62,9 +62,6 @@ BEGIN
   END IF;
 END$$
 
-DELIMITER ;
-
-
 -- =========================================================
 -- 4. If a donation is linked to an acquisition,
 --    mark that artwork as owned (in case it wasn’t)
