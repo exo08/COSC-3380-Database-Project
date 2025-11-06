@@ -35,8 +35,7 @@ function hasPermission(string $action): bool {
             'report_events', 'report_attendance'
         ],
         'member' => [
-            'view_artworks', 'view_artists', 'view_exhibitions',
-            'view_events', 'purchase_ticket',
+            'purchase_ticket',
             'view_shop_items', 'purchase_shop',
             'view_own_membership', 'view_own_tickets', 'view_own_purchases'
         ]
