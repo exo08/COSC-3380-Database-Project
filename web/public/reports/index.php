@@ -116,6 +116,17 @@ include __DIR__ . '/../templates/layout_header.php';
                             <i class="bi bi-people"></i> Visitor Sales
                         </a>
                         <?php endif; ?>
+                        <?php if (hasReportAccess('human-donor-summary')): ?>
+                        <a href="human-donor-summary.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-heart"></i> Individual Donor Lookup
+                        </a>
+                        <?php endif; ?>
+
+                        <?php if (hasReportAccess('org-donor-summary')): ?>
+                        <a href="org-donor-summary.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building-check"></i> Organization Donor Lookup
+                        </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

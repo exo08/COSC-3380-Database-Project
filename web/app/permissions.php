@@ -169,7 +169,9 @@ function hasReportAccess(string $report_name): bool {
             'exhibition-attendance',
             'curator-portfolio',
             'exhibition-artwork-list',
-            'exhibition-timeline'
+            'exhibition-timeline',
+            'human-donor-summary',
+            'org-donor-summary'
         ],
         'shop_staff' => [
             'revenue-by-item',
