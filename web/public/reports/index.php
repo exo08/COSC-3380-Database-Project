@@ -166,6 +166,17 @@ include __DIR__ . '/../templates/layout_header.php';
                             <i class="bi bi-exclamation-circle"></i> Events Near Capacity
                         </a>
                         <?php endif; ?>
+                        <?php if (hasReportAccess('exhibition-artwork-list')): ?>
+                        <a href="exhibition-artwork-list.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-easel"></i> Exhibition Artwork List
+                        </a>
+                        <?php endif; ?>
+
+                        <?php if (hasReportAccess('exhibition-timeline')): ?>
+                        <a href="exhibition-timeline.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-calendar3"></i> Exhibition Timeline
+                        </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
