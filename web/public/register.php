@@ -387,7 +387,7 @@ $membership_types = [
 
                     <div class="text-center mt-3">
                         <p class="mb-0">Already have an account? 
-                            <a href="web/public/login.php" class="text-primary">Login here</a>
+                            <a href="login.php" class="text-primary">Login here</a>
                         </p>
                         <a href="index.php" class="text-muted">
                             <i class="bi bi-arrow-left"></i> Back to Home
