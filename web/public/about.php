@@ -187,8 +187,8 @@ include __DIR__ . '/templates/header.php';
                     <i class="bi bi-geo-alt-fill"></i>
                     <div class="d-inline-block">
                         <strong>Address</strong><br>
-                        1001 Bissonnet Street<br>
-                        Houston, TX 77005
+                        123 Money Street<br>
+                        Laundering, TX 00000
                     </div>
                 </div>
                 
@@ -196,7 +196,7 @@ include __DIR__ . '/templates/header.php';
                     <i class="bi bi-telephone-fill"></i>
                     <div class="d-inline-block">
                         <strong>Phone</strong><br>
-                        (713) 639-7300
+                        (123) 456-7890
                     </div>
                 </div>
                 

@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 // Simple home page for testing
-require __DIR__ . '/app/db.php'; // add /.. for local testing
+// require __DIR__ . '/app/db.php'; // add /.. for local testing
 
 // test DB connection
 // try {
