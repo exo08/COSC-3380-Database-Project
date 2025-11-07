@@ -25,48 +25,63 @@ include __DIR__ . '/../templates/layout_header.php';
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        <?php if (hasReportAccess('acquisition-history')): ?>
-                        <a href="acquisition-history.php" class="list-group-item list-group-item-action">
-                            <i class="bi bi-clock-history"></i> Acquisition History
+                        <?php if (hasReportAccess('advanced-artwork-search')): ?>
+                        <a href="advanced-artwork-search.php" class="list-group-item list-group-item-action bg-light">
+                            <i class="bi bi-funnel"></i> <strong>Advanced Artwork Search</strong>
+                            <small class="d-block text-muted">Multi-filter search</small>
                         </a>
                         <?php endif; ?>
-                        
-                        <?php if (hasReportAccess('artwork-catalog')): ?>
-                        <a href="artwork-catalog.php" class="list-group-item list-group-item-action">
-                            <i class="bi bi-book"></i> Full Artwork Catalog
-                        </a>
-                        <?php endif; ?>
-                        
-                        <?php if (hasReportAccess('owned-or-loaned')): ?>
-                        <a href="owned-or-loaned.php" class="list-group-item list-group-item-action">
-                            <i class="bi bi-building"></i> Owned vs Loaned
-                        </a>
-                        <?php endif; ?>
-                        
+                
+                        <div class="mt-2 mb-1 ms-2 text-muted small">
+                            <strong>Quick Searches:</strong>
+                        </div>
+                
                         <?php if (hasReportAccess('artwork-by-artist')): ?>
                         <a href="artwork-by-artist.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-person"></i> Artwork by Artist
                         </a>
                         <?php endif; ?>
-                        
+                
                         <?php if (hasReportAccess('artwork-by-medium')): ?>
                         <a href="artwork-by-medium.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-brush"></i> Artwork by Medium
                         </a>
                         <?php endif; ?>
-                        
+                
                         <?php if (hasReportAccess('artwork-by-period')): ?>
                         <a href="artwork-by-period.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-calendar-range"></i> Artwork by Period
                         </a>
                         <?php endif; ?>
-                        
+                
+                        <div class="mt-2 mb-1 ms-2 text-muted small">
+                            <strong>Other Reports:</strong>
+                        </div>
+                
+                        <?php if (hasReportAccess('acquisition-history')): ?>
+                        <a href="acquisition-history.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-clock-history"></i> Acquisition History
+                        </a>
+                        <?php endif; ?>
+                
+                        <?php if (hasReportAccess('artwork-catalog')): ?>
+                        <a href="artwork-catalog.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-book"></i> Full Artwork Catalog
+                        </a>
+                        <?php endif; ?>
+                
+                        <?php if (hasReportAccess('owned-or-loaned')): ?>
+                        <a href="owned-or-loaned.php" class="list-group-item list-group-item-action">
+                            <i class="bi bi-building"></i> Owned vs Loaned
+                        </a>
+                        <?php endif; ?>
+                
                         <?php if (hasReportAccess('artwork-dimensions')): ?>
                         <a href="artwork-dimensions.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-rulers"></i> Artwork Dimensions
                         </a>
                         <?php endif; ?>
-                        
+                
                         <?php if (hasReportAccess('unlocated-artworks')): ?>
                         <a href="unlocated-artworks.php" class="list-group-item list-group-item-action">
                             <i class="bi bi-exclamation-triangle"></i> Unlocated Artworks

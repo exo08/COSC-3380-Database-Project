@@ -93,4 +93,40 @@ BEGIN
     WHERE ARTWORK.title LIKE CONCAT('%', p_title, '%')
     ORDER BY ARTWORK.title;
 END$$
+
+CREATE PROCEDURE AdvancedArtworkSearch(
+    IN p_artist_first_name VARCHAR(255),
+    IN p_artist_last_name VARCHAR(255),
+    IN p_medium INT,
+    IN p_start_year INT,
+    IN p_end_year INT,
+    IN p_location_id INT
+)
+BEGIN
+    SELECT DISTINCT
+        ARTWORK.artwork_id,
+        ARTWORK.title,
+        ARTWORK.creation_year,
+        ARTWORK.medium,
+        ARTIST.artist_id,
+        ARTIST.first_name,
+        ARTIST.last_name,
+        ARTWORK.height,
+        ARTWORK.width,
+        ARTWORK.depth,
+        LOCATION.name AS location_name,
+        LOCATION.location_id
+    FROM ARTWORK
+    LEFT JOIN ARTWORK_CREATOR ON ARTWORK.artwork_id = ARTWORK_CREATOR.artwork_id
+    LEFT JOIN ARTIST ON ARTWORK_CREATOR.artist_id = ARTIST.artist_id
+    LEFT JOIN LOCATION ON ARTWORK.location_id = LOCATION.location_id
+    WHERE 
+        (p_artist_first_name IS NULL OR ARTIST.first_name = p_artist_first_name) AND
+        (p_artist_last_name IS NULL OR ARTIST.last_name = p_artist_last_name) AND
+        (p_medium IS NULL OR ARTWORK.medium = p_medium) AND
+        (p_start_year IS NULL OR ARTWORK.creation_year >= p_start_year) AND
+        (p_end_year IS NULL OR ARTWORK.creation_year <= p_end_year) AND
+        (p_location_id IS NULL OR ARTWORK.location_id = p_location_id)
+    ORDER BY ARTWORK.creation_year, ARTWORK.title;
+END$$
 DELIMITER ;
