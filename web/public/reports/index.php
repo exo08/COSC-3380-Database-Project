@@ -145,39 +145,39 @@ include __DIR__ . '/../templates/layout_header.php';
                     <div class="card-body">
                         <div class="list-group list-group-flush">
                             <?php if (hasReportAccess('advanced-artwork-search')): ?>
-                            <a href="advanced-artwork-search.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-funnel"></i> Advanced Artwork Search
-                            </a>
+                                <a href="advanced-artwork-search.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-funnel"></i> Advanced Artwork Search
+                                </a>
                             <?php endif; ?>
                             
                             <?php if (hasReportAccess('artwork-by-artist')): ?>
-                            <a href="artwork-by-artist.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-person"></i> Artwork by Artist
-                            </a>
+                                <a href="artwork-by-artist.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-person"></i> Artwork by Artist
+                                </a>
                             <?php endif; ?>
                             
                             <?php if (hasReportAccess('artwork-by-medium')): ?>
-                            <a href="artwork-by-medium.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-brush"></i> Artwork by Medium
-                            </a>
+                                <a href="artwork-by-medium.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-brush"></i> Artwork by Medium
+                                </a>
                             <?php endif; ?>
                             
                             <?php if (hasReportAccess('artwork-by-period')): ?>
-                            <a href="artwork-by-period.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-clock-history"></i> Artwork by Period
-                            </a>
+                                <a href="artwork-by-period.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-clock-history"></i> Artwork by Period
+                                </a>
                             <?php endif; ?>
                             
                             <?php if (hasReportAccess('artwork-dimensions')): ?>
-                            <a href="artwork-dimensions.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-rulers"></i> Artwork Dimensions
-                            </a>
+                                <a href="artwork-dimensions.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-rulers"></i> Artwork Dimensions
+                                </a>
                             <?php endif; ?>
                             
                             <?php if (hasReportAccess('unlocated-artworks')): ?>
-                            <a href="unlocated-artworks.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-exclamation-triangle"></i> Unlocated Artworks
-                            </a>
+                                <a href="unlocated-artworks.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-exclamation-triangle"></i> Unlocated Artworks
+                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -194,27 +194,41 @@ include __DIR__ . '/../templates/layout_header.php';
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <a href="top-donors.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-trophy"></i> Top Donors
-                            </a>
-                            <a href="revenue-by-item.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-cart"></i> Revenue by Item
-                            </a>
-                            <a href="revenue-by-category.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-tags"></i> Revenue by Category
-                            </a>
-                            <a href="member-sales.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-person-check"></i> Member Sales
-                            </a>
-                            <a href="visitor-sales.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-person"></i> Visitor Sales
-                            </a>
-                            <a href="individual-donor-lookup.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-search"></i> Individual Donor Lookup
-                            </a>
-                            <a href="organization-donor-lookup.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-building"></i> Organization Donor Lookup
-                            </a>
+                            <?php if(hasReportAccess('top-donors')):?>
+                                <a href="top-donors.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-trophy"></i> Top Donors
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('revenue-by-item')):?>
+                                <a href="revenue-by-item.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-cart"></i> Revenue by Item
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('revenue-by-category')):?>
+                                <a href="revenue-by-category.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-tags"></i> Revenue by Category
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('member-sales')):?>
+                                <a href="member-sales.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-person-check"></i> Member Sales
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('visitor-sales')):?>
+                                <a href="visitor-sales.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-person"></i> Visitor Sales
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('human-donor-summary')):?>
+                                <a href="human-donor-summary.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-search"></i> Individual Donor Lookup
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('org-donor-summary')):?>
+                                <a href="org-donor-summary.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-building"></i> Organization Donor Lookup
+                                </a>
+                            <?php endif;?>
                         </div>
                     </div>
                 </div>
@@ -230,30 +244,46 @@ include __DIR__ . '/../templates/layout_header.php';
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
-                            <a href="current-exhibitions.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-building"></i> Current Exhibitions
-                            </a>
-                            <a href="exhibition-attendance.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-people-fill"></i> Exhibition Attendance
-                            </a>
-                            <a href="curator-portfolio.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-briefcase"></i> Curator Portfolio
-                            </a>
-                            <a href="event-attendance.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-clipboard-check"></i> Event Attendance
-                            </a>
-                            <a href="upcoming-events.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-calendar-check"></i> Upcoming Events
-                            </a>
-                            <a href="events-near-capacity.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-exclamation-circle"></i> Events Near Capacity
-                            </a>
-                            <a href="exhibition-artwork-list.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-easel"></i> Exhibition Artwork List
-                            </a>
-                            <a href="exhibition-timeline.php" class="list-group-item list-group-item-action">
-                                <i class="bi bi-calendar3"></i> Exhibition Timeline
-                            </a>
+                            <?php if(hasReportAccess('current-exhibitions')):?>
+                                <a href="current-exhibitions.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-building"></i> Current Exhibitions
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('exhibition-attendance')):?>
+                                <a href="exhibition-attendance.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-people-fill"></i> Exhibition Attendance
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('curator-portfolio')):?>
+                                <a href="curator-portfolio.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-briefcase"></i> Curator Portfolio
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('event-attendance')):?>
+                                <a href="event-attendance.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-clipboard-check"></i> Event Attendance
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('upcoming-events')):?>
+                                <a href="upcoming-events.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-calendar-check"></i> Upcoming Events
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('events-near-capacity')):?>
+                                <a href="events-near-capacity.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-exclamation-circle"></i> Events Near Capacity
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('exhibition-artwork-list')):?>
+                                <a href="exhibition-artwork-list.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-easel"></i> Exhibition Artwork List
+                                </a>
+                            <?php endif;?>
+                            <?php if(hasReportAccess('exhibition-timeline')):?>
+                                <a href="exhibition-timeline.php" class="list-group-item list-group-item-action">
+                                    <i class="bi bi-calendar3"></i> Exhibition Timeline
+                                </a>
+                            <?php endif;?>
                         </div>
                     </div>
                 </div>
