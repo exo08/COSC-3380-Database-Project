@@ -1,10 +1,14 @@
-Great! Here are all the Financial Reports:
-
-4. Revenue by Item
-File: web/public/reports/revenue-by-item.php
 php<?php
 session_start();
 require_once __DIR__ . '/../app/db.php';
+require_once __DIR__ . '/../app/permissions.php';
+
+// ADD THIS BLOCK:
+$report_name = basename(__FILE__, '.php'); // Gets filename without .php
+if (!hasReportAccess($report_name)) {
+    header('Location: index.php?error=access_denied');
+    exit;
+}
 
 $page_title = 'Revenue by Item';
 $db = db();

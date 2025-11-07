@@ -141,3 +141,47 @@ function logActivity(string $action_type, ?string $table_name = null, ?int $reco
     
     return $stmt->execute();
 }
+
+// Check if user has access to a specific report
+function hasReportAccess(string $report_name): bool {
+    if (!isset($_SESSION['user_type'])) {
+        return false;
+    }
+    
+    $role = $_SESSION['user_type'];
+    
+    // Admin has access to all reports
+    if ($role === 'admin') {
+        return true;
+    }
+    
+    // Define report access by role
+    $report_access = [
+        'curator' => [
+            'acquisition-history',
+            'artwork-catalog',
+            'artwork-by-artist',
+            'artwork-by-medium',
+            'artwork-by-period',
+            'artwork-dimensions',
+            'unlocated-artworks',
+            'top-donors',
+            'current-exhibitions',
+            'exhibition-attendance',
+            'curator-portfolio'
+        ],
+        'shop_staff' => [
+            'revenue-by-item',
+            'revenue-by-category',
+            'member-sales',
+            'visitor-sales'
+        ],
+        'event_staff' => [
+            'event-attendance',
+            'upcoming-events',
+            'events-near-capacity'
+        ]
+    ];
+    
+    return in_array($report_name, $report_access[$role] ?? []);
+}
