@@ -36,7 +36,7 @@ $acquisition_trends = $db->query("
     LIMIT 24
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Owned vs Loaned Breakdown
+// Owned vs Loaned breakdown using ORDER BY for correct breakdown since it was causing issues
 $ownership = $db->query("
     SELECT 
         CASE WHEN is_owned = 1 THEN 'Owned' ELSE 'Loaned' END AS status,
@@ -48,6 +48,7 @@ $ownership = $db->query("
         END) AS avg_size_cm2
     FROM ARTWORK
     GROUP BY status
+    ORDER BY status DESC
 ")->fetch_all(MYSQLI_ASSOC);
 
 // Collection Growth Over Time
@@ -94,6 +95,8 @@ $methods = $db->query("
 ")->fetch_all(MYSQLI_ASSOC);
 
 // Unlocated Artworks Priority List
+// For owned artworks show days since acquisition
+// For loaned artworks show N/A since we don't track loan dates in the current schema
 $unlocated = $db->query("
     SELECT 
         A.artwork_id,
@@ -101,20 +104,50 @@ $unlocated = $db->query("
         A.creation_year,
         A.is_owned,
         CONCAT(AR.first_name, ' ', AR.last_name) AS artist_name,
-        DATEDIFF(NOW(), ACQ.acquisition_date) AS days_since_acquisition
+        CASE 
+            WHEN A.is_owned = 1 AND ACQ.acquisition_date IS NOT NULL 
+            THEN DATEDIFF(NOW(), ACQ.acquisition_date)
+            ELSE NULL
+        END AS days_since_acquisition
     FROM ARTWORK A
     LEFT JOIN ARTWORK_CREATOR AC ON A.artwork_id = AC.artwork_id
     LEFT JOIN ARTIST AR ON AC.artist_id = AR.artist_id
     LEFT JOIN ACQUISITION ACQ ON A.artwork_id = ACQ.artwork_id
     WHERE A.location_id IS NULL
-    ORDER BY days_since_acquisition DESC
+    ORDER BY A.is_owned DESC, days_since_acquisition DESC
     LIMIT 20
 ")->fetch_all(MYSQLI_ASSOC);
 
 // Calculate totals
 $total_artworks = array_sum(array_column($ownership, 'count'));
-$owned_artworks = $ownership[0]['count'] ?? 0;
-$loaned_artworks = $ownership[1]['count'] ?? 0;
+
+// loop through and get counts 
+$owned_artworks = 0;
+$loaned_artworks = 0;
+foreach ($ownership as $row) {
+    if ($row['status'] === 'Owned') {
+        $owned_artworks = $row['count'];
+    } elseif ($row['status'] === 'Loaned') {
+        $loaned_artworks = $row['count'];
+    }
+}
+
+// failsafe for testing
+$counts = $db->query("
+    SELECT 
+        SUM(CASE WHEN is_owned = 1 THEN 1 ELSE 0 END) AS owned_count,
+        SUM(CASE WHEN is_owned = 0 THEN 1 ELSE 0 END) AS loaned_count,
+        COUNT(*) AS total_count
+    FROM ARTWORK
+")->fetch_assoc();
+
+// failsafe for testing
+if ($owned_artworks == 0 && $loaned_artworks == 0) {
+    $owned_artworks = $counts['owned_count'];
+    $loaned_artworks = $counts['loaned_count'];
+    $total_artworks = $counts['total_count'];
+}
+
 $total_acquisition_spending = array_sum(array_column($acquisition_trends, 'total_value'));
 
 // Get all mediums for filter
@@ -279,8 +312,8 @@ include __DIR__ . '/../templates/layout_header.php';
                 <tbody>
                     <?php foreach ($medium_data as $m): ?>
                         <tr>
-                            <td><span class="badge bg-primary"><?= htmlspecialchars($m['medium'] ?? 'No medium') ?></span></td>  <!-- Need to add correct lookup tables so that instead of numbers being displayed for the medium its the actual name of the medium -->
-                            <td class="text-end"><?= number_format($m['artwork_count']) ?></td> 
+                            <td><span class="badge bg-primary"><?= htmlspecialchars($m['medium'] ?? 'No medium') ?></span></td>
+                            <td class="text-end"><?= number_format($m['artwork_count']) ?></td>
                             <td class="text-end"><?= number_format($m['owned_count']) ?></td>
                             <td class="text-end"><?= $m['avg_size_cm2'] ? number_format($m['avg_size_cm2'], 0) : 'N/A' ?></td>
                             <td class="text-end"><?= number_format($m['locations_used']) ?></td>
@@ -307,7 +340,7 @@ include __DIR__ . '/../templates/layout_header.php';
                             <th>Artist</th>
                             <th>Year</th>
                             <th>Status</th>
-                            <th class="text-end">Days Without Location</th>
+                            <th class="text-end">Time Unlocated</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -323,9 +356,15 @@ include __DIR__ . '/../templates/layout_header.php';
                                     </span>
                                 </td>
                                 <td class="text-end">
-                                    <span class="badge <?= $art['days_since_acquisition'] > 30 ? 'bg-danger' : 'bg-warning' ?>">
-                                        <?= $art['days_since_acquisition'] ?? 'Unknown' ?> days
-                                    </span>
+                                    <?php if ($art['is_owned'] && $art['days_since_acquisition'] !== null): ?>
+                                        <span class="badge <?= $art['days_since_acquisition'] > 30 ? 'bg-danger' : 'bg-warning' ?>">
+                                            <?= $art['days_since_acquisition'] ?> days
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">
+                                            <?= $art['is_owned'] ? 'No acquisition date' : 'N/A (Loaned)' ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -338,7 +377,7 @@ include __DIR__ . '/../templates/layout_header.php';
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Ownership Chart
+// Ownership pie chart
 new Chart(document.getElementById('ownershipChart'), {
     type: 'doughnut',
     data: {
@@ -347,6 +386,27 @@ new Chart(document.getElementById('ownershipChart'), {
             data: <?= json_encode(array_column($ownership, 'count')) ?>,
             backgroundColor: ['#28a745', '#ffc107']
         }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += context.parsed + ' artwork' + (context.parsed !== 1 ? 's' : '');
+                        return label;
+                    }
+                }
+            }
+        }
     }
 });
 
@@ -363,7 +423,17 @@ new Chart(document.getElementById('methodsChart'), {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
     }
 });
 
@@ -376,12 +446,18 @@ new Chart(document.getElementById('growthChart'), {
             label: 'Acquisitions',
             data: <?= json_encode(array_column($growth, 'acquisitions')) ?>,
             borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
             tension: 0.4
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
     }
 });
 </script>
