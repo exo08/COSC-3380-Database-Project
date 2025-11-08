@@ -7,6 +7,8 @@
 -- 3. Extend memberships that are auto-renewed
 -- 4. Update donation acquisition links
 -- 5. Ensure exhibitions can’t exceed end date
+-- 6. Prevent event overbooking
+-- 7. Ensure sales are linked to either a member or visitor, not both
 -- =========================================================
 
 DELIMITER $$
@@ -95,12 +97,9 @@ BEGIN
   END IF;
 END$$
 
-DELIMITER ;
-
 -- =========================================================
 -- 6. Prevent overbooking of events
 -- =========================================================
-DELIMITER $$
 
 CREATE TRIGGER trg_prevent_event_overbooking
 BEFORE INSERT ON TICKET
@@ -136,4 +135,33 @@ BEGIN
   END IF;
 END$$
 
+-- =====================================================
+-- 7. Sale associated with either member or visitor or neither (walk-in) but not both
+-- =====================================================
+
+-- Trigger for INSERT operations
+CREATE TRIGGER trg_validate_sale_customer_insert
+BEFORE INSERT ON SALE
+FOR EACH ROW
+BEGIN
+    -- Check if both member_id and visitor_id are set (invalid)
+    IF NEW.member_id IS NOT NULL AND NEW.visitor_id IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A sale cannot be associated with both a member and a visitor. Please specify only one.';
+    END IF;
+END$$
+
+-- Trigger for UPDATE operations
+CREATE TRIGGER trg_validate_sale_customer_update
+BEFORE UPDATE ON SALE
+FOR EACH ROW
+BEGIN
+    -- Check if both member_id and visitor_id are set (invalid)
+    IF NEW.member_id IS NOT NULL AND NEW.visitor_id IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A sale cannot be associated with both a member and a visitor. Please specify only one.';
+    END IF;
+END$$
+
 DELIMITER ;
+
