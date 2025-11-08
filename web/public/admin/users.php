@@ -129,7 +129,7 @@ if (isset($_POST['create_user'])) {
                 // Commit transaction
                 $db->commit();
                 
-                $success = "User created successfully! (ID: $new_user_id" . ($linked_id ? ", Linked ID: $linked_id" : "") . ")";
+                $success = "User created successfully!";
                 logActivity('user_created', 'USER_ACCOUNT', $new_user_id, "Created user: $username (role: $user_type)");
             } else {
                 throw new Exception($db->error);
