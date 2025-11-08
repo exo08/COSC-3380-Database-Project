@@ -296,7 +296,7 @@ include __DIR__ . '/../templates/layout_header.php';
             <i class="bi bi-clock fs-1 me-3"></i>
             <div>
                 <h4 class="mb-1">Your Membership is Expiring Soon</h4>
-                <p class="mb-0">Your membership expires in <?= $member['days_until_expiration'] ?> days on <?= date('F j, Y', strtotime($member['expiration_date'])) ?>. Renew now to avoid interruption!</p>
+                <p class="mb-0">Your membership expires on <?= date('F j, Y', strtotime($member['expiration_date'])) ?>. Renew now to avoid interruption!</p>
             </div>
         </div>
     </div>
