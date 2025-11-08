@@ -299,9 +299,7 @@ include __DIR__ . '/../templates/layout_header.php';
                         <button class="btn btn-sm btn-outline-primary" onclick="editEvent(<?= htmlspecialchars(json_encode($event)) ?>)">
                             <i class="bi bi-pencil"></i> Edit
                         </button>
-                        <a href="/events/checkin.php?event_id=<?= $event['event_id'] ?>" class="btn btn-sm btn-outline-info">
-                            <i class="bi bi-check-square"></i> Check-in
-                        </a>
+                        
                         <a href="/events/sell-ticket.php?event_id=<?= $event['event_id'] ?>" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-cart-plus"></i> Sell
                         </a>
