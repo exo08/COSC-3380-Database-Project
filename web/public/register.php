@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $start_date = date('Y-m-d');
             $expiration_date = date('Y-m-d', strtotime('+1 year'));
             
-            // Step 1: Create MEMBER record
+            // Create MEMBER record
             $stmt = $db->prepare("
                 INSERT INTO MEMBER (first_name, last_name, email, phone, address, 
                                    membership_type, is_student, start_date, expiration_date, 
@@ -71,10 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $member_id = $db->insert_id;
             
-            // Step 2: Hash password using SHA256 (matching your login.php)
+            // Hash password using SHA256
             $password_hash = hash('sha256', $password);
             
-            // Step 3: Create USER_ACCOUNT record linked to the MEMBER
+            // Create USER_ACCOUNT record linked to the MEMBER
             $user_type = 'member';
             $stmt = $db->prepare("
                 INSERT INTO USER_ACCOUNT (username, email, password_hash, user_type, linked_id, is_active)
@@ -120,7 +120,7 @@ $membership_types = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Become a Member - Museum of Fine Arts</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --primary-color: #2c3e50;

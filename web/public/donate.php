@@ -1,4 +1,8 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 session_start();
 require_once __DIR__ . '/app/db.php';
 
@@ -30,103 +34,176 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (empty($email) && !$is_anonymous) {
             $error = 'Email is required for non-anonymous donations.';
         } else {
-            // First, check if donor exists or create new donor
-            $donor_id = null;
-            
-            if (!$is_anonymous && !empty($email)) {
-                $stmt = $db->prepare("SELECT donor_id FROM DONOR WHERE email = ?");
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
+            try {
+                $db->begin_transaction();
                 
-                if ($result->num_rows > 0) {
-                    $donor_id = $result->fetch_assoc()['donor_id'];
+                // First, check if donor exists or create new donor
+                $donor_id = null;
+                
+                if (!$is_anonymous && !empty($email)) {
+                    $stmt = $db->prepare("SELECT donor_id FROM DONOR WHERE email = ?");
+                    $stmt->bind_param("s", $email);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    if ($result->num_rows > 0) {
+                        $donor_id = $result->fetch_assoc()['donor_id'];
+                    }
+                    $stmt->close();
                 }
-            }
-            
-            // Create new donor if doesn't exist
-            if ($donor_id === null) {
-                $stmt = $db->prepare("
-                    INSERT INTO DONOR (first_name, last_name, organization_name, is_organization, 
-                                      address, email, phone)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->bind_param("sssisss", 
-                    $first_name, $last_name, $organization_name, $is_organization,
-                    $address, $email, $phone
-                );
+                
+                // Create new donor if doesn't exist
+                if ($donor_id === null) {
+                    $stmt = $db->prepare("CALL CreateDonor(?, ?, ?, ?, ?, ?, ?, @donor_id)");
+                    $stmt->bind_param("sssisss", 
+                        $first_name, $last_name, $organization_name, $is_organization,
+                        $address, $email, $phone
+                    );
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                    $result = $db->query("SELECT @donor_id as donor_id");
+                    $row = $result->fetch_assoc();
+                    $donor_id = $row['donor_id'];
+                }
+                
+                // Create donation record
+                $donation_date = date('Y-m-d');
+                $stmt = $db->prepare("CALL CreateDonation(?, ?, ?, ?, NULL, @donation_id)");
+                $stmt->bind_param("idsi", $donor_id, $amount, $donation_date, $purpose);
                 $stmt->execute();
-                $donor_id = $db->insert_id;
-            }
-            
-            // Create donation record
-            $donation_date = date('Y-m-d');
-            $stmt = $db->prepare("
-                INSERT INTO DONATION (donor_id, amount, donation_date, purpose)
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->bind_param("idsi", $donor_id, $amount, $donation_date, $purpose);
-            
-            if ($stmt->execute()) {
+                $stmt->close();
+                
+                $db->commit();
+                
                 $success = 'Thank you for your generous donation of $' . number_format($amount, 2) . '!';
                 if (!$is_anonymous) {
                     $success .= ' A confirmation email will be sent to ' . htmlspecialchars($email) . '.';
                 }
-            } else {
+            } catch (Exception $e) {
+                $db->rollback();
                 $error = 'An error occurred processing your donation. Please try again.';
             }
         }
     } else {
         // Artwork donation
         $artwork_title = $_POST['artwork_title'] ?? '';
-        $artist_name = $_POST['artist_name'] ?? '';
-        $creation_year = $_POST['creation_year'] ?? null;
-        $medium = $_POST['medium'] ?? '';
-        $dimensions = $_POST['dimensions'] ?? '';
+        $artist_first_name = $_POST['artist_first_name'] ?? '';
+        $artist_last_name = $_POST['artist_last_name'] ?? '';
+        $creation_year = !empty($_POST['creation_year']) ? intval($_POST['creation_year']) : null;
+        $medium = !empty($_POST['medium']) ? intval($_POST['medium']) : null;
+        $height = !empty($_POST['height']) ? floatval($_POST['height']) : null;
+        $width = !empty($_POST['width']) ? floatval($_POST['width']) : null;
+        $depth = !empty($_POST['depth']) ? floatval($_POST['depth']) : null;
         $description = $_POST['description'] ?? '';
         $estimated_value = floatval($_POST['estimated_value'] ?? 0);
+        $artist_birth_year = !empty($_POST['artist_birth_year']) ? intval($_POST['artist_birth_year']) : null;
+        $artist_death_year = !empty($_POST['artist_death_year']) ? intval($_POST['artist_death_year']) : null;
+        $artist_nationality = $_POST['artist_nationality'] ?? '';
+        $artist_bio = $_POST['artist_bio'] ?? '';
         
-        if (empty($artwork_title) || empty($artist_name)) {
-            $error = 'Please provide artwork title and artist name.';
+        if (empty($artwork_title)) {
+            $error = 'Please provide artwork title.';
         } elseif (empty($email) && !$is_anonymous) {
             $error = 'Email is required for non-anonymous donations.';
         } else {
-            // Create or get donor
-            $donor_id = null;
-            
-            if (!$is_anonymous && !empty($email)) {
-                $stmt = $db->prepare("SELECT donor_id FROM DONOR WHERE email = ?");
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
+            try {
+                $db->begin_transaction();
                 
-                if ($result->num_rows > 0) {
-                    $donor_id = $result->fetch_assoc()['donor_id'];
+                // Create or get donor
+                $donor_id = null;
+                
+                if (!$is_anonymous && !empty($email)) {
+                    $stmt = $db->prepare("SELECT donor_id FROM DONOR WHERE email = ?");
+                    $stmt->bind_param("s", $email);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    if ($result->num_rows > 0) {
+                        $donor_id = $result->fetch_assoc()['donor_id'];
+                    }
+                    $stmt->close();
                 }
-            }
-            
-            if ($donor_id === null) {
+                
+                if ($donor_id === null) {
+                    $stmt = $db->prepare("CALL CreateDonor(?, ?, ?, ?, ?, ?, ?, @donor_id)");
+                    $stmt->bind_param("sssisss", 
+                        $first_name, $last_name, $organization_name, $is_organization,
+                        $address, $email, $phone
+                    );
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                    $result = $db->query("SELECT @donor_id as donor_id");
+                    $row = $result->fetch_assoc();
+                    $donor_id = $row['donor_id'];
+                }
+                
+                // Store all submission data as json
+                $submission_data = json_encode([
+                    'artwork_title' => $artwork_title,
+                    'creation_year' => $creation_year,
+                    'medium' => $medium,
+                    'height' => $height,
+                    'width' => $width,
+                    'depth' => $depth,
+                    'description' => $description,
+                    'artist_first_name' => $artist_first_name,
+                    'artist_last_name' => $artist_last_name,
+                    'artist_birth_year' => $artist_birth_year,
+                    'artist_death_year' => $artist_death_year,
+                    'artist_nationality' => $artist_nationality,
+                    'artist_bio' => $artist_bio,
+                    'estimated_value' => $estimated_value
+                ]);
+                
+                // Create acquisition record WITHOUT artwork_id
+                $acquisition_date = date('Y-m-d');
+                $method = 3; // Gift
+                $source_name = $is_organization ? $organization_name : "$first_name $last_name";
+                
                 $stmt = $db->prepare("
-                    INSERT INTO DONOR (first_name, last_name, organization_name, is_organization, 
-                                      address, email, phone)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO ACQUISITION (artwork_id, acquisition_date, price_value, source_name, method, acquisition_status, submission_data)
+                    VALUES (NULL, ?, ?, ?, ?, 'pending', ?)
                 ");
-                $stmt->bind_param("sssisss", 
-                    $first_name, $last_name, $organization_name, $is_organization,
-                    $address, $email, $phone
+                $stmt->bind_param("sdsis", 
+                    $acquisition_date,
+                    $estimated_value,
+                    $source_name,
+                    $method,
+                    $submission_data
                 );
                 $stmt->execute();
-                $donor_id = $db->insert_id;
+                $acquisition_id = $db->insert_id;
+                $stmt->close();
+                
+                // Create donation record
+                $donation_date = date('Y-m-d');
+                $purpose = 2; // Artwork Acquisition
+                $donation_amount = 0;
+                
+                $stmt = $db->prepare("CALL CreateDonation(?, ?, ?, ?, ?, @donation_id)");
+                $stmt->bind_param("idsii", 
+                    $donor_id,
+                    $donation_amount,
+                    $donation_date,
+                    $purpose,
+                    $acquisition_id
+                );
+                $stmt->execute();
+                $stmt->close();
+                
+                $db->commit();
+                
+                $success = 'Thank you for your artwork donation proposal! Our curators will review "' . 
+                          htmlspecialchars($artwork_title) . '" and contact you soon.';
+                if (!$is_anonymous && !empty($email)) {
+                    $success .= ' We will reach out to ' . htmlspecialchars($email) . ' within 5-7 business days.';
+                }
+            } catch (Exception $e) {
+                $db->rollback();
+                $error = 'An error occurred processing your donation. Please try again.';
             }
-            
-            $success = 'Thank you for your artwork donation proposal! Our curators will review "' . 
-                      htmlspecialchars($artwork_title) . '" and contact you soon.';
-            if (!$is_anonymous && !empty($email)) {
-                $success .= ' We will reach out to ' . htmlspecialchars($email) . ' within 5-7 business days.';
-            }
-            
-            // Actual artwork would be added to ARTWORK table after curator review
-            // for now we're just capturing the donation intent
         }
     }
 }
@@ -139,6 +216,19 @@ $donation_purposes = [
     5 => 'Building & Facilities',
     6 => 'Conservation & Preservation'
 ];
+
+$mediums = [
+    1 => 'Oil Painting',
+    2 => 'Watercolor',
+    3 => 'Acrylic',
+    4 => 'Sculpture',
+    5 => 'Photography',
+    6 => 'Drawing',
+    7 => 'Mixed Media',
+    8 => 'Digital Art',
+    9 => 'Printmaking',
+    10 => 'Textile'
+];
 ?>
 
 <!DOCTYPE html>
@@ -148,7 +238,7 @@ $donation_purposes = [
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Homies Fine Arts - Make a Donation</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
         <style>
             :root {
                 --primary-color: #2c3e50;
@@ -253,7 +343,7 @@ $donation_purposes = [
                 color: var(--primary-color);
             }
 
-            .form-control:focus {
+            .form-control:focus, .form-select:focus {
                 border-color: var(--secondary-color);
                 box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
             }
@@ -286,6 +376,15 @@ $donation_purposes = [
                 border-radius: 10px;
                 padding: 1rem;
                 margin-bottom: 1.5rem;
+            }
+
+            .dimension-group {
+                display: flex;
+                gap: 10px;
+            }
+
+            .dimension-input {
+                flex: 1;
             }
         </style>
     </head>
@@ -392,7 +491,7 @@ $donation_purposes = [
                             <div class="row">
                                 <div class="col-md-8 mb-3">
                                     <label class="form-label">Artwork Title <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="artwork_title">
+                                    <input type="text" class="form-control" name="artwork_title" id="artwork_title">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Creation Year</label>
@@ -402,21 +501,54 @@ $donation_purposes = [
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Artist Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="artist_name" 
-                                    placeholder="Full name of the artist">
+                                <label class="form-label">Medium <span class="text-danger">*</span></label>
+                                <select class="form-select" name="medium" id="artwork_medium">
+                                    <option value="">Select medium...</option>
+                                    <?php foreach ($mediums as $value => $label): ?>
+                                        <option value="<?php echo $value; ?>"><?php echo htmlspecialchars($label); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Medium</label>
-                                    <input type="text" class="form-control" name="medium" 
-                                        placeholder="e.g., Oil on canvas, Bronze, etc.">
+                            <div class="mb-3">
+                                <label class="form-label">Dimensions (in centimeters)</label>
+                                <div class="dimension-group">
+                                    <div class="dimension-input">
+                                        <label class="form-label small">Height (cm)</label>
+                                        <input type="number" step="0.01" class="form-control" name="height" placeholder="H">
+                                    </div>
+                                    <div class="dimension-input">
+                                        <label class="form-label small">Width (cm)</label>
+                                        <input type="number" step="0.01" class="form-control" name="width" placeholder="W">
+                                    </div>
+                                    <div class="dimension-input">
+                                        <label class="form-label small">Depth (cm)</label>
+                                        <input type="number" step="0.01" class="form-control" name="depth" placeholder="D">
+                                    </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Dimensions</label>
-                                    <input type="text" class="form-control" name="dimensions" 
-                                        placeholder="e.g., 24 x 36 inches">
+                                <small class="text-muted">Leave depth blank for 2D artworks</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Artist Information</label>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control" name="artist_first_name" placeholder="Artist First Name">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <input type="text" class="form-control" name="artist_last_name" placeholder="Artist Last Name">
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" name="artist_birth_year" placeholder="Birth Year" min="1000" max="<?= date('Y') ?>">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" class="form-control" name="artist_death_year" placeholder="Death Year" min="1000" max="<?= date('Y') ?>">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" name="artist_nationality" placeholder="Nationality">
+                                    </div>
                                 </div>
                             </div>
 
@@ -434,6 +566,12 @@ $donation_purposes = [
                                 <label class="form-label">Description & Provenance</label>
                                 <textarea class="form-control" name="description" rows="4"
                                         placeholder="Describe the artwork, its history, and how you acquired it"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Artist Biography (Optional)</label>
+                                <textarea class="form-control" name="artist_bio" rows="3"
+                                        placeholder="Brief biography or background information about the artist"></textarea>
                             </div>
                         </div>
 
@@ -525,8 +663,12 @@ $donation_purposes = [
                     // Update required fields
                     if (type === 'money') {
                         document.getElementById('amount').required = true;
+                        document.getElementById('artwork_title').required = false;
+                        document.getElementById('artwork_medium').required = false;
                     } else {
                         document.getElementById('amount').required = false;
+                        document.getElementById('artwork_title').required = true;
+                        document.getElementById('artwork_medium').required = true;
                     }
                 });
             });
@@ -546,10 +688,15 @@ $donation_purposes = [
                 donorInfo.style.display = this.checked ? 'none' : 'block';
                 
                 // Update required fields
-                const requiredInputs = donorInfo.querySelectorAll('input[required]');
-                requiredInputs.forEach(input => {
-                    input.required = !this.checked;
-                });
+                if (!this.checked) {
+                    document.getElementById('first_name').required = true;
+                    document.getElementById('last_name').required = true;
+                    document.getElementById('email').required = true;
+                } else {
+                    document.getElementById('first_name').required = false;
+                    document.getElementById('last_name').required = false;
+                    document.getElementById('email').required = false;
+                }
             });
 
             // Organization toggle
