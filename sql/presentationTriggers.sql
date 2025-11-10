@@ -1,7 +1,7 @@
-CREATE TRIGGER `trg_reduce_stock_after_sale` AFTER INSERT ON `SALE_ITEM`
- FOR EACH ROW BEGIN
+CREATE TRIGGER `trg_reduce_stock_after_sale` AFTER INSERT ON `SALE_ITEM` --Sale item creates new row when new item purchased
+ FOR EACH ROW BEGIN --Trigger executes once for every row inserted into sale item
   UPDATE SHOP_ITEM
-  SET quantity_in_stock = quantity_in_stock - NEW.quantity
+  SET quantity_in_stock = quantity_in_stock - NEW.quantity--NEW.Quantity refers to how many items of same type were sold
   WHERE item_id = NEW.item_id;
 
   -- prevent negative stock
