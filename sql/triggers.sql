@@ -45,24 +45,24 @@ END$$
 
 
 -- =========================================================
--- 3. Auto-renew membership on sale if eligible
+-- 3. extend membership expiration on auto-renewal ------> double check 
 -- =========================================================
 
-CREATE TRIGGER trg_validate_active_member_sale
-BEFORE INSERT ON SALE
-FOR EACH ROW
-BEGIN
-  IF NEW.member_id IS NOT NULL THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM MEMBER 
-      WHERE member_id = NEW.member_id 
-      AND expiration_date >= CURDATE()
-    ) THEN
-      SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Member account is expired. Cannot apply member benefits.';
-    END IF;
-  END IF;
-END$$
+-- CREATE TRIGGER trg_validate_active_member_sale
+-- BEFORE INSERT ON SALE
+-- FOR EACH ROW
+-- BEGIN
+--   IF NEW.member_id IS NOT NULL THEN
+--     IF NOT EXISTS (
+--       SELECT 1 FROM MEMBER 
+--       WHERE member_id = NEW.member_id 
+--       AND expiration_date >= CURDATE()
+--     ) THEN
+--       SIGNAL SQLSTATE '45000'
+--         SET MESSAGE_TEXT = 'Member account is expired. Cannot apply member benefits.';
+--     END IF;
+--   END IF;
+-- END$$
 
 -- =========================================================
 -- 4. If a donation is linked to an acquisition,
