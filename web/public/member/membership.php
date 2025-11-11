@@ -68,10 +68,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->close();
         
     } elseif ($_POST['action'] === 'upgrade') {
+        // Calculate new expiration date (1 year from current expiration or today, whichever is later)
+        $current_expiration = $db->query("SELECT expiration_date FROM MEMBER WHERE member_id = $linked_id")->fetch_assoc()['expiration_date'];
+        
+        if (strtotime($current_expiration) > time()) {
+            // If current membership is still active, extend from expiration date
+            $new_expiration = date('Y-m-d', strtotime($current_expiration . ' +1 year'));
+        } else {
+            // If expired, start from today
+            $new_expiration = date('Y-m-d', strtotime('+1 year'));
+        }
+        
         $new_membership_type = intval($_POST['new_membership_type']);
         
-        $stmt = $db->prepare("UPDATE MEMBER SET membership_type = ? WHERE member_id = ?");
-        $stmt->bind_param("ii", $new_membership_type, $linked_id);
+        // Update membership
+        $stmt = $db->prepare("
+            UPDATE MEMBER 
+            SET membership_type = ?, 
+                expiration_date = ?,
+                start_date = CASE 
+                    WHEN expiration_date < CURDATE() THEN CURDATE() 
+                    ELSE start_date 
+                END
+            WHERE member_id = ?
+        ");
+        $stmt->bind_param("isi", $new_membership_type, $new_expiration, $linked_id);
         
         if ($stmt->execute()) {
             $type_names = [1 => 'Student', 2 => 'Individual', 3 => 'Family', 4 => 'Patron', 5 => 'Benefactor'];

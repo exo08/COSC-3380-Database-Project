@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $db->begin_transaction();
                 
-                // First, check if donor exists or create new donor
+                // check if donor exists or create new donor
                 $donor_id = null;
                 
                 if (!$is_anonymous && !empty($email)) {
