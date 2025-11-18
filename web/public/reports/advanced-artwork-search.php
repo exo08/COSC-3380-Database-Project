@@ -24,7 +24,7 @@ $artists = $artists_result->fetch_all(MYSQLI_ASSOC);
 $locations_result = $db->query("SELECT location_id, name FROM LOCATION ORDER BY name");
 $locations = $locations_result->fetch_all(MYSQLI_ASSOC);
 
-// Define medium options (based on your database schema)
+// Define medium options 
 $mediums = [
     1 => 'Oil Painting',
     2 => 'Watercolor',

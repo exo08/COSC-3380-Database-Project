@@ -1,5 +1,5 @@
 <?php
-// Enable error reporting for debugging
+// debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -21,7 +21,7 @@ try {
     $date_from = $_GET['date_from'] ?? date('Y-m-d', strtotime('-6 months'));
     $date_to = $_GET['date_to'] ?? date('Y-m-d');
 
-    // Exhibition Attendance Comparison - FIXED WITH PREPARED STATEMENT
+    // Exhibition Attendance Comparison 
     $stmt = $db->prepare("
         SELECT 
             E.exhibition_id,
@@ -45,7 +45,7 @@ try {
     $exhibitions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Event Capacity Utilization - FIXED WITH PREPARED STATEMENT
+    // Event Capacity Utilization 
     $stmt = $db->prepare("
         SELECT 
             EV.event_id,
@@ -67,7 +67,7 @@ try {
     $events = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Curator Performance - FIXED WITH PREPARED STATEMENT
+    // Curator Performance 
     $stmt = $db->prepare("
         SELECT 
             S.staff_id,

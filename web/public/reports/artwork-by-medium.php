@@ -3,8 +3,7 @@ session_start();
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/permissions.php';
 
-// ADD THIS BLOCK:
-$report_name = basename(__FILE__, '.php'); // Gets filename without .php
+$report_name = basename(__FILE__, '.php');
 if (!hasReportAccess($report_name)) {
     header('Location: index.php?error=access_denied');
     exit;

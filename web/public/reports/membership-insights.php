@@ -1,5 +1,5 @@
 <?php
-// Enable error reporting for debugging
+// debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -28,7 +28,7 @@ try {
         throw new Exception("Invalid date format");
     }
 
-    // Demographics Breakdown (MEMBER + VISITOR + TICKET)
+    // Demographics Breakdown 
     $demographics_query = "
         SELECT 
             CASE 
@@ -132,7 +132,7 @@ try {
     $frequent_visitors = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Member Activity Analysis (MEMBER + TICKET + SALE)
+    // Member Activity Analysis 
     $activity_query = "
         SELECT 
             m.member_id,

@@ -1,5 +1,5 @@
 <?php
-// Enable error reporting for debugging
+// debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -22,7 +22,7 @@ try {
     $date_to = $_GET['date_to'] ?? date('Y-m-d');
     $medium_filter = $_GET['medium'] ?? '';
 
-    // Acquisition Spending Trends - FIXED WITH PREPARED STATEMENT
+    // Acquisition Spending Trends 
     $stmt = $db->prepare("
         SELECT 
             DATE_FORMAT(acquisition_date, '%Y-%m') AS month,
@@ -69,7 +69,7 @@ try {
         LIMIT 10
     ")->fetch_all(MYSQLI_ASSOC);
 
-    // Artwork by Medium with Space Analysis - FIXED
+    // Artwork by Medium with Space Analysis 
     if ($medium_filter) {
         $stmt = $db->prepare("
             SELECT 
@@ -105,7 +105,7 @@ try {
         ")->fetch_all(MYSQLI_ASSOC);
     }
 
-    // Acquisition Methods Breakdown - FIXED
+    // Acquisition Methods Breakdown 
     $stmt = $db->prepare("
         SELECT 
             method,

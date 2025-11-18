@@ -3,8 +3,7 @@ session_start();
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/permissions.php';
 
-// ADD THIS BLOCK:
-$report_name = basename(__FILE__, '.php'); // Gets filename without .php
+$report_name = basename(__FILE__, '.php'); 
 if (!hasReportAccess($report_name)) {
     header('Location: index.php?error=access_denied');
     exit;
@@ -18,7 +17,7 @@ $db = db();
 $result = $db->query("CALL GetAcquisitionHistory()");
 $acquisitions = $result->fetch_all(MYSQLI_ASSOC);
 $result->close();
-$db->next_result(); // Important: clear the result set
+$db->next_result(); 
 
 // Handle export requests
 if (isset($_GET['export'])) {
@@ -125,7 +124,7 @@ include __DIR__ . '/../templates/layout_header.php';
     </div>
 </div>
 
-<!-- Add DataTables for sorting/searching -->
+<!-- DataTables for sorting/searching -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -134,7 +133,7 @@ include __DIR__ . '/../templates/layout_header.php';
 $(document).ready(function() {
     $('#acquisitionsTable').DataTable({
         pageLength: 25,
-        order: [[4, 'desc']] // Sort by date descending
+        order: [[4, 'desc']] 
     });
 });
 </script>

@@ -180,7 +180,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                             <td><strong>$<?= number_format($donation['amount'], 2) ?></strong></td>
                                             <td>
                                                 <?php
-                                                // Decode purpose (assuming it's a code)
+                                                // Decode purpose 
                                                 $purposes = [
                                                     1 => 'General Fund',
                                                     2 => 'Acquisition',
