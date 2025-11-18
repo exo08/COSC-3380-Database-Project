@@ -190,7 +190,7 @@ include __DIR__ . '/../templates/layout_header.php';
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Financial Reports</h5>
+                        <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Finances</h5>
                     </div>
                     <div class="card-body">
                         <div class="list-group list-group-flush">
