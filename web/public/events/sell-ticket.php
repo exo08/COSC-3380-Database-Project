@@ -66,23 +66,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $member_id = intval($_POST['member_id']);
                 
             } elseif ($customer_type === 'new_visitor') {
-                // Create new visitor
+                // Create new visitor - DIRECT INSERT (bypassing stored procedure)
                 $first_name = trim($_POST['first_name']);
                 $last_name = trim($_POST['last_name']);
                 $email = trim($_POST['email']);
                 $phone = trim($_POST['phone']);
                 $is_student = isset($_POST['is_student']) ? 1 : 0;
                 $created_at = date('Y-m-d');
-                
-                $stmt = $db->prepare("CALL CreateVisitor(?, ?, ?, ?, ?, ?, @new_visitor_id)");
-                $stmt->bind_param('sissss', $first_name, $last_name, $is_student, $email, $phone, $created_at);
-                $stmt->execute();
+    
+                // Validate
+                if (empty($first_name)) {
+                    throw new Exception("First name is required");
+                }
+                if (empty($email)) {
+                    throw new Exception("Email is required");
+                }
+    
+                // Use direct INSERT with proper NULL handling
+                if (empty($last_name)) {
+                    $last_name = null;
+                }
+                if (empty($phone)) {
+                    $phone = null;
+                }
+    
+                // Direct INSERT instead of stored procedure
+                $stmt = $db->prepare("
+                    INSERT INTO VISITOR (first_name, last_name, is_student, email, phone, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+    
+                $stmt->bind_param('ssisss', $first_name, $last_name, $is_student, $email, $phone, $created_at);
+    
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to create visitor: " . $stmt->error);
+                }
+    
+                $visitor_id = $db->insert_id;
                 $stmt->close();
-                $db->next_result();
-                
-                $result = $db->query("SELECT @new_visitor_id as visitor_id");
-                $row = $result->fetch_assoc();
-                $visitor_id = $row['visitor_id'];
             }
             
             // Create ticket
