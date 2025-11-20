@@ -4,6 +4,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 session_start();
+require_once __DIR__ . '/../app/session.php';
 require_once __DIR__ . '/../app/db.php';
 require_once __DIR__ . '/../app/permissions.php';
 
@@ -464,6 +465,7 @@ include __DIR__ . '/../templates/layout_header.php';
                 <li class="mb-2">Never share your login credentials</li>
                 <li class="mb-2">Keep your email address up to date</li>
                 <li class="mb-2">Review your account activity periodically</li>
+                <li class="mb-2">You'll be automatically logged out after 5 minutes of inactivity</li>
             </ul>
         </div>
     </div>
