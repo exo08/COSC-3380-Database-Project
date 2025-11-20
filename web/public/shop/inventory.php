@@ -38,7 +38,7 @@ if (isset($_POST['save_item'])) {
     $item_id = !empty($_POST['item_id']) ? intval($_POST['item_id']) : null;
     $item_name = $_POST['item_name'] ?? '';
     $description = $_POST['description'] ?? '';
-    $category = $_POST['category'] ?? '';
+    $category_id = !empty($_POST['category_id']) ? intval($_POST['category_id']) : null;
     $price = floatval($_POST['price']);
     $quantity_in_stock = intval($_POST['quantity_in_stock']);
     
@@ -49,12 +49,12 @@ if (isset($_POST['save_item'])) {
             $stmt = $db->prepare("UPDATE SHOP_ITEM SET 
                     item_name = ?,
                     description = ?,
-                    category = ?,
+                    category_id = ?,
                     price = ?,
                     quantity_in_stock = ?
                     WHERE item_id = ?");
             
-            $stmt->bind_param("sssdii", $item_name, $description, $category, $price, $quantity_in_stock, $item_id);
+            $stmt->bind_param("ssidii", $item_name, $description, $category_id, $price, $quantity_in_stock, $item_id);
             
             if ($stmt->execute()) {
                 $success = 'Item updated successfully!';
@@ -65,14 +65,12 @@ if (isset($_POST['save_item'])) {
         } else { // insert new
             requirePermission('add_shop_item');
             
-            $stmt = $db->prepare("CALL CreateShopItem(?, ?, ?, ?, ?, @new_item_id)");
-            $stmt->bind_param("sssdi", $item_name, $description, $category, $price, $quantity_in_stock);
+            // Insert directly instead of using stored procedure (if procedure doesn't exist or needs updating)
+            $stmt = $db->prepare("INSERT INTO SHOP_ITEM (item_name, description, category_id, price, quantity_in_stock) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssidi", $item_name, $description, $category_id, $price, $quantity_in_stock);
             
             if ($stmt->execute()) {
-                $result = $db->query("SELECT @new_item_id as item_id");
-                $new_item = $result->fetch_assoc();
-                $new_item_id = $new_item['item_id'];
-                
+                $new_item_id = $db->insert_id;
                 $success = "Item added successfully! (ID: $new_item_id)";
                 logActivity('shop_item_created', 'SHOP_ITEM', $new_item_id, "Created shop item: $item_name");
             } else {
@@ -107,9 +105,21 @@ if (isset($_POST['adjust_stock'])) {
     }
 }
 
-// Get all shop items
+// Get all shop items with category information
 try {
-    $items_result = $db->query("SELECT * FROM SHOP_ITEM ORDER BY item_name");
+    $items_result = $db->query("
+        SELECT 
+            si.item_id,
+            si.item_name,
+            si.description,
+            si.category_id,
+            c.name as category_name,
+            si.price,
+            si.quantity_in_stock
+        FROM SHOP_ITEM si
+        LEFT JOIN CATEGORY c ON si.category_id = c.category_id
+        ORDER BY si.item_name
+    ");
     
     if ($items_result) {
         $items = $items_result->fetch_all(MYSQLI_ASSOC);
@@ -122,14 +132,13 @@ try {
     $error = 'Error loading items: ' . $e->getMessage();
 }
 
-// Get categories for filter/dropdown
-$categories = [];
-foreach ($items as $item) {
-    if (!empty($item['category']) && !in_array($item['category'], $categories)) {
-        $categories[] = $item['category'];
-    }
+// Get all active categories for dropdown
+try {
+    $categories_result = $db->query("SELECT category_id, name FROM CATEGORY WHERE is_active = 1 ORDER BY name");
+    $categories = $categories_result->fetch_all(MYSQLI_ASSOC);
+} catch (Exception $e) {
+    $categories = [];
 }
-sort($categories);
 
 include __DIR__ . '/../templates/layout_header.php';
 ?>
@@ -245,7 +254,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                 <br><small class="text-muted"><?= htmlspecialchars(substr($item['description'], 0, 60)) ?>...</small>
                             <?php endif; ?>
                         </td>
-                        <td><?= htmlspecialchars($item['category'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($item['category_name'] ?? 'Uncategorized') ?></td>
                         <td><strong>$<?= number_format($item['price'], 2) ?></strong></td>
                         <td>
                             <span class="badge bg-<?= $item['quantity_in_stock'] == 0 ? 'danger' : ($item['quantity_in_stock'] < 10 ? 'warning' : 'success') ?>">
@@ -305,12 +314,12 @@ include __DIR__ . '/../templates/layout_header.php';
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Category</label>
-                            <input type="text" class="form-control" name="category" id="category" list="categoryList" placeholder="e.g., Books, Prints">
-                            <datalist id="categoryList">
+                            <select class="form-select" name="category_id" id="category_id">
+                                <option value="">-- Select Category --</option>
                                 <?php foreach ($categories as $cat): ?>
-                                    <option value="<?= htmlspecialchars($cat) ?>">
+                                    <option value="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
                                 <?php endforeach; ?>
-                            </datalist>
+                            </select>
                         </div>
                     </div>
                     
@@ -407,7 +416,7 @@ function clearForm() {
     document.getElementById('item_id').value = '';
     document.getElementById('item_name').value = '';
     document.getElementById('description').value = '';
-    document.getElementById('category').value = '';
+    document.getElementById('category_id').value = '';
     document.getElementById('price').value = '';
     document.getElementById('quantity_in_stock').value = '0';
 }
@@ -417,7 +426,7 @@ function editItem(item) {
     document.getElementById('item_id').value = item.item_id;
     document.getElementById('item_name').value = item.item_name || '';
     document.getElementById('description').value = item.description || '';
-    document.getElementById('category').value = item.category || '';
+    document.getElementById('category_id').value = item.category_id || '';
     document.getElementById('price').value = item.price || '';
     document.getElementById('quantity_in_stock').value = item.quantity_in_stock || '0';
     

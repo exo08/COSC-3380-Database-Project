@@ -9,40 +9,48 @@ $category_filter = $_GET['category'] ?? '';
 $search_query = $_GET['search'] ?? '';
 
 // Get all categories for filter
-$categories_query = "SELECT DISTINCT category FROM SHOP_ITEM WHERE quantity_in_stock > 0 ORDER BY category";
+$categories_query = "
+    SELECT DISTINCT c.category_id, c.name 
+    FROM CATEGORY c
+    INNER JOIN SHOP_ITEM si ON c.category_id = si.category_id
+    WHERE si.quantity_in_stock > 0 AND c.is_active = 1
+    ORDER BY c.name
+";
 $categories_result = $db->query($categories_query);
 
 // Build shop items query
 $items_query = "
     SELECT 
-        item_id,
-        item_name,
-        description,
-        category,
-        price,
-        quantity_in_stock
-    FROM SHOP_ITEM
-    WHERE quantity_in_stock > 0
+        si.item_id,
+        si.item_name,
+        si.description,
+        c.category_id,
+        c.name as category_name,
+        si.price,
+        si.quantity_in_stock
+    FROM SHOP_ITEM si
+    LEFT JOIN CATEGORY c ON si.category_id = c.category_id
+    WHERE si.quantity_in_stock > 0
 ";
 
 $params = [];
 $types = '';
 
 if (!empty($category_filter)) {
-    $items_query .= " AND category = ?";
+    $items_query .= " AND c.category_id = ?";
     $params[] = $category_filter;
-    $types .= 's';
+    $types .= 'i';
 }
 
 if (!empty($search_query)) {
-    $items_query .= " AND (item_name LIKE ? OR description LIKE ?)";
+    $items_query .= " AND (si.item_name LIKE ? OR si.description LIKE ?)";
     $search_param = '%' . $search_query . '%';
     $params[] = $search_param;
     $params[] = $search_param;
     $types .= 'ss';
 }
 
-$items_query .= " ORDER BY category, item_name";
+$items_query .= " ORDER BY c.name, si.item_name";
 
 $stmt = $db->prepare($items_query);
 if (!empty($params)) {
@@ -54,7 +62,7 @@ $items_result = $stmt->get_result();
 // Group items by category
 $items_by_category = [];
 while ($item = $items_result->fetch_assoc()) {
-    $category = $item['category'];
+    $category = $item['category_name'] ?? 'Uncategorized';
     if (!isset($items_by_category[$category])) {
         $items_by_category[$category] = [];
     }
@@ -426,9 +434,9 @@ while ($item = $items_result->fetch_assoc()) {
                         $categories_result->data_seek(0);
                         while ($cat = $categories_result->fetch_assoc()): 
                         ?>
-                            <a href="?category=<?= urlencode($cat['category']) ?>" 
-                            class="category-badge <?= $category_filter === $cat['category'] ? 'active' : '' ?>">
-                                <?= htmlspecialchars($cat['category']) ?>
+                            <a href="?category=<?= urlencode($cat['category_id']) ?>" 
+                            class="category-badge <?= $category_filter == $cat['category_id'] ? 'active' : '' ?>">
+                                <?= htmlspecialchars($cat['name']) ?>
                             </a>
                         <?php endwhile; ?>
                     </div>
@@ -463,7 +471,7 @@ while ($item = $items_result->fetch_assoc()) {
                                     <div class="item-body">
                                         <div class="item-category"><?= htmlspecialchars($category) ?></div>
                                         <h3 class="item-name"><?= htmlspecialchars($item['item_name']) ?></h3>
-                                        <p class="item-description"><?= htmlspecialchars($item['description']) ?></p>
+                                        <p class="item-description"><?= htmlspecialchars($item['description'] ?? '') ?></p>
                                         
                                         <div class="mt-auto">
                                             <div class="item-price">$<?= number_format($item['price'], 2) ?></div>

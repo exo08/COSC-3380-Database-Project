@@ -146,12 +146,27 @@ if (isset($_POST['process_sale'])) {
 $search = $_GET['search'] ?? '';
 if (!empty($search)) {
     $search_term = "%$search%";
-    $stmt = $db->prepare("SELECT * FROM SHOP_ITEM WHERE (item_name LIKE ? OR description LIKE ?) AND quantity_in_stock > 0 ORDER BY item_name");
+    $stmt = $db->prepare("
+        SELECT si.item_id, si.item_name, si.description, si.price, si.quantity_in_stock, 
+               si.category_id, c.name as category_name
+        FROM SHOP_ITEM si
+        LEFT JOIN CATEGORY c ON si.category_id = c.category_id
+        WHERE (si.item_name LIKE ? OR si.description LIKE ?) AND si.quantity_in_stock > 0 
+        ORDER BY si.item_name
+    ");
     $stmt->bind_param('ss', $search_term, $search_term);
     $stmt->execute();
     $items_result = $stmt->get_result();
 } else {
-    $items_result = $db->query("SELECT * FROM SHOP_ITEM WHERE quantity_in_stock > 0 ORDER BY item_name LIMIT 20");
+    $items_result = $db->query("
+        SELECT si.item_id, si.item_name, si.description, si.price, si.quantity_in_stock,
+               si.category_id, c.name as category_name
+        FROM SHOP_ITEM si
+        LEFT JOIN CATEGORY c ON si.category_id = c.category_id
+        WHERE si.quantity_in_stock > 0 
+        ORDER BY si.item_name 
+        LIMIT 20
+    ");
 }
 
 $items = $items_result ? $items_result->fetch_all(MYSQLI_ASSOC) : [];

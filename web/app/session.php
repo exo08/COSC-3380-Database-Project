@@ -30,7 +30,7 @@ if (isset($_SESSION['user_id'])) {
             
             // Start new session for the timeout message
             session_start();
-            $_SESSION['timeout_message'] = 'You have been logged out due to ' . floor($idle_time / 60) . ' minutes of inactivity. Please log in again.';
+            $_SESSION['timeout_message'] = 'Logged out due to more than 5 minutes of inactivity';
             
             // Redirect to login page
             header('Location: /login.php?reason=timeout');
