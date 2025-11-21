@@ -109,6 +109,17 @@ include __DIR__ . '/templates/header.php';
         color: #000;
     }
 
+    .exhibition-status.ending-soon {
+        background: #dc3545;
+        color: white;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+
     .exhibition-body {
         padding: 2rem;
     }
@@ -149,21 +160,17 @@ include __DIR__ . '/templates/header.php';
         margin-top: 1rem;
     }
 
-    .btn-view-artworks {
-        background: var(--purple);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 25px;
+    .countdown-badge {
+        background: rgba(0,0,0,0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        display: inline-block;
+        margin-top: 1rem;
         font-weight: 600;
-        transition: all 0.3s;
     }
 
-    .btn-view-artworks:hover {
-        background: #8e44ad;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        color: white;
+    .countdown-badge i {
+        margin-right: 0.25rem;
     }
 </style>
 
@@ -182,15 +189,47 @@ include __DIR__ . '/templates/header.php';
             $start_date = new DateTime($exhibition['start_date']);
             $end_date = new DateTime($exhibition['end_date']);
             $today = new DateTime();
+
+            // set all times to midnight for date only comparison
+            $start_date->setTime(0, 0, 0);
+            $end_date->setTime(23, 59, 59); // end of day
+            $today->setTime(0, 0, 0);
             
             $is_current = ($today >= $start_date && $today <= $end_date);
-            $status = $is_current ? 'current' : 'upcoming';
-            $status_text = $is_current ? 'Now Showing' : 'Coming Soon';
+            $is_upcoming = ($today < $start_date);
+            
+            // Calculate days remaining or days until start
+            $days_value = 0;
+            if ($is_current) {
+                $interval = $today->diff($end_date);
+                $days_value = (int)$interval->format('%a');
+            } elseif ($is_upcoming) {
+                $interval = $today->diff($start_date);
+                $days_value = (int)$interval->format('%a');
+            }
+            
+            // Determine status
+            if ($is_upcoming) {
+                $status = 'upcoming';
+                $status_text = 'Coming Soon';
+            } elseif ($is_current && $days_value <= 7) {
+                $status = 'ending-soon';
+                $status_text = 'Ending Soon';
+            } elseif ($is_current) {
+                $status = 'current';
+                $status_text = 'Now Showing';
+            } else {
+                $status = 'past';
+                $status_text = 'Past';
+            }
         ?>
         <div class="exhibition-card">
             <div class="exhibition-image">
                 <span class="exhibition-status <?= $status ?>">
                     <?= $status_text ?>
+                    <?php if ($status === 'ending-soon'): ?>
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                    <?php endif; ?>
                 </span>
                 <i class="bi bi-palette-fill"></i>
             </div>
@@ -201,13 +240,35 @@ include __DIR__ . '/templates/header.php';
                     <i class="bi bi-calendar-range"></i>
                     <?= $start_date->format('F j, Y') ?> - <?= $end_date->format('F j, Y') ?>
                 </div>
+                <!-- correct badges for exhibitions -->
+                <?php if ($is_current): ?>
+                    <div class="countdown-badge">
+                        <?php if ($days_value == 0): ?>
+                            <i class="bi bi-clock-history"></i> Last Day!
+                        <?php elseif ($days_value == 1): ?>
+                            <i class="bi bi-clock-history"></i> 1 Day Remaining
+                        <?php else: ?>
+                            <i class="bi bi-clock-history"></i> <?= $days_value ?> Days Remaining
+                        <?php endif; ?>
+                    </div>
+                <?php elseif ($is_upcoming): ?>
+                    <div class="countdown-badge">
+                        <?php if ($days_value == 0): ?>
+                            <i class="bi bi-calendar-check"></i> Opening Today!
+                        <?php elseif ($days_value == 1): ?>
+                            <i class="bi bi-calendar-check"></i> Opening Tomorrow
+                        <?php else: ?>
+                            <i class="bi bi-calendar-check"></i> Opens in <?= $days_value ?> Days
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
                 
                 <?php if ($exhibition['description']): ?>
-                    <p class="lead"><?= htmlspecialchars($exhibition['description']) ?></p>
+                    <p class="lead mt-3"><?= htmlspecialchars($exhibition['description']) ?></p>
                 <?php endif; ?>
                 
                 <div class="row mt-4">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="exhibition-info">
                             <i class="bi bi-palette"></i>
                             <strong>Featured Artworks:</strong> <?= $exhibition['artwork_count'] ?> pieces
@@ -223,17 +284,8 @@ include __DIR__ . '/templates/header.php';
                         <?php if ($exhibition['theme_sponsor']): ?>
                             <div class="sponsor-badge">
                                 <i class="bi bi-star-fill"></i>
-                                Sponsored by: <strong><?= htmlspecialchars($exhibition['theme_sponsor']) ?></strong>
+                                Sponsor/Theme: <strong><?= htmlspecialchars($exhibition['theme_sponsor']) ?></strong>
                             </div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="col-md-6 text-end">
-                        <?php if ($is_current): ?>
-                            <a href="/exhibitions/view.php?id=<?= $exhibition['exhibition_id'] ?>" 
-                               class="btn btn-view-artworks">
-                                <i class="bi bi-eye"></i> View Exhibition
-                            </a>
                         <?php endif; ?>
                     </div>
                 </div>

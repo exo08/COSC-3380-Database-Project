@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $current_expiration = $db->query("SELECT expiration_date FROM MEMBER WHERE member_id = $linked_id")->fetch_assoc()['expiration_date'];
         
         if (strtotime($current_expiration) > time()) {
-            // If current membership is still active, extend from expiration date
+            // If current membership is still active extend from expiration date
             $new_expiration = date('Y-m-d', strtotime($current_expiration . ' +1 year'));
         } else {
             // If expired, start from today
@@ -60,8 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $success = "Membership renewed successfully! Your $type_name membership is now active until " . date('F j, Y', strtotime($new_expiration)) . ".";
             logActivity('membership_renewed', 'MEMBER', $linked_id, "Renewed membership: $type_name until $new_expiration");
             
-            // In a real system, you would process payment here
-            // For now, we'll just log the renewal
+            // In a real system you would process payment here for now we'll just log the renewal
         } else {
             $error = "Error renewing membership: " . $db->error;
         }
@@ -111,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (!$confirm) {
             $error = "Please confirm that you want to cancel your membership.";
         } else {
-            // Set expiration to today (effectively canceling)
+            // Set expiration to today (effectively canceling) membership cancels at end of day
             // Turn off auto-renew
             $stmt = $db->prepare("
                 UPDATE MEMBER 
