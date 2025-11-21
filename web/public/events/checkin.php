@@ -60,19 +60,19 @@ try {
         $ticket_info = $result->fetch_assoc();
         $stmt->close();
 
-        echo "<div style='background: yellow; padding: 20px; margin: 20px;'>";
-        echo "<h3>DEBUG INFO:</h3>";
-        echo "<pre>";
-        echo "Member ID: " . ($ticket_info['member_id'] ?? 'NULL') . "\n";
-        echo "Member First: " . ($ticket_info['member_first_name'] ?? 'NULL') . "\n";
-        echo "Member Last: " . ($ticket_info['member_last_name'] ?? 'NULL') . "\n";
-        echo "Visitor ID: " . ($ticket_info['visitor_id'] ?? 'NULL') . "\n";
-        echo "Visitor First: " . ($ticket_info['visitor_first_name'] ?? 'NULL') . "\n";
-        echo "Visitor Last: " . ($ticket_info['visitor_last_name'] ?? 'NULL') . "\n";
-        echo "\nFULL ARRAY:\n";
-        print_r($ticket_info);
-        echo "</pre>";
-        echo "</div>";
+        // echo "<div style='background: yellow; padding: 20px; margin: 20px;'>";
+        // echo "<h3>DEBUG INFO:</h3>";
+        // echo "<pre>";
+        // echo "Member ID: " . ($ticket_info['member_id'] ?? 'NULL') . "\n";
+        // echo "Member First: " . ($ticket_info['member_first_name'] ?? 'NULL') . "\n";
+        // echo "Member Last: " . ($ticket_info['member_last_name'] ?? 'NULL') . "\n";
+        // echo "Visitor ID: " . ($ticket_info['visitor_id'] ?? 'NULL') . "\n";
+        // echo "Visitor First: " . ($ticket_info['visitor_first_name'] ?? 'NULL') . "\n";
+        // echo "Visitor Last: " . ($ticket_info['visitor_last_name'] ?? 'NULL') . "\n";
+        // echo "\nFULL ARRAY:\n";
+        // print_r($ticket_info);
+        // echo "</pre>";
+        // echo "</div>";
         
         if (!$ticket_info) {
             $error = "Ticket #$ticket_id not found.";
