@@ -104,7 +104,13 @@ if($exhibitions_result){
 }
 
 // Get all staff for curator dropdown (only curators or admins)
-$staff_result = $db->query("SELECT staff_id, name, title FROM STAFF ORDER BY name");
+$staff_result = $db->query("
+    SELECT s.staff_id, s.name, s.title 
+    FROM STAFF s
+    JOIN USER_ACCOUNT ua ON s.staff_id = ua.linked_id
+    WHERE ua.user_type = 'curator'
+    ORDER BY s.name
+");
 $staff_list = $staff_result ? $staff_result->fetch_all(MYSQLI_ASSOC) : [];
 
 include __DIR__ . '/../templates/layout_header.php';
