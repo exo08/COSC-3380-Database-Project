@@ -59,20 +59,6 @@ try {
         $result = $stmt->get_result();
         $ticket_info = $result->fetch_assoc();
         $stmt->close();
-
-        // echo "<div style='background: yellow; padding: 20px; margin: 20px;'>";
-        // echo "<h3>DEBUG INFO:</h3>";
-        // echo "<pre>";
-        // echo "Member ID: " . ($ticket_info['member_id'] ?? 'NULL') . "\n";
-        // echo "Member First: " . ($ticket_info['member_first_name'] ?? 'NULL') . "\n";
-        // echo "Member Last: " . ($ticket_info['member_last_name'] ?? 'NULL') . "\n";
-        // echo "Visitor ID: " . ($ticket_info['visitor_id'] ?? 'NULL') . "\n";
-        // echo "Visitor First: " . ($ticket_info['visitor_first_name'] ?? 'NULL') . "\n";
-        // echo "Visitor Last: " . ($ticket_info['visitor_last_name'] ?? 'NULL') . "\n";
-        // echo "\nFULL ARRAY:\n";
-        // print_r($ticket_info);
-        // echo "</pre>";
-        // echo "</div>";
         
         if (!$ticket_info) {
             $error = "Ticket #$ticket_id not found.";
@@ -144,27 +130,10 @@ try {
             // Commit transaction
             $db->commit();
             
-            // Redirect to prevent form resubmission
-            $_SESSION['checkin_success'] = "Ticket #$ticket_id checked in successfully!";
-            header("Location: index.php?ticket_id=$ticket_id&lookup=1");
-            exit;
+            // Set success message
+            $success = "Ticket #$ticket_id checked in successfully!";
             
-        } catch (Exception $e) {
-            // Rollback on error
-            $db->rollback();
-            throw $e;
-        }
-    }
-
-    // Handle redirect after successful check-in
-    if (isset($_SESSION['checkin_success'])) {
-        $success = $_SESSION['checkin_success'];
-        unset($_SESSION['checkin_success']);
-        
-        // Auto-lookup the ticket if specified
-        if (isset($_GET['ticket_id']) && isset($_GET['lookup'])) {
-            $ticket_id = intval($_GET['ticket_id']);
-            
+            // fetch the ticket info to show updated status
             $stmt = $db->prepare("
                 SELECT 
                     t.ticket_id,
@@ -200,6 +169,11 @@ try {
                 $ticket_info = $result->fetch_assoc();
                 $stmt->close();
             }
+            
+        } catch (Exception $e) {
+            // Rollback on error
+            $db->rollback();
+            throw $e;
         }
     }
 
@@ -266,6 +240,19 @@ include __DIR__ . '/../templates/layout_header.php';
 
 .event-summary-card {
     border-left: 4px solid #007bff;
+}
+
+#checkinBtn {
+    transition: all 0.3s ease;
+}
+
+#checkinBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+#checkinBtn:active {
+    transform: scale(0.98);
 }
 </style>
 
@@ -387,17 +374,17 @@ include __DIR__ . '/../templates/layout_header.php';
                     <hr class="my-4">
                     <p class="text-muted mb-0">
                         <i class="bi bi-clock-history"></i> Checked in: 
-                        <?= date('g:i A on F j, Y', strtotime($ticket_info['check_in_time'])) ?>
+                        <?= date('g:i A \o\n F j, Y', strtotime($ticket_info['check_in_time'])) ?>
                     </p>
                 <?php endif; ?>
             </div>
             
             <div class="col-md-4 text-center d-flex align-items-center justify-content-center">
                 <?php if (!$ticket_info['checked_in']): ?>
-                    <form method="POST" onsubmit="return confirm('Check in this ticket?');">
+                    <form method="POST" id="checkinForm">
                         <input type="hidden" name="action" value="checkin">
                         <input type="hidden" name="ticket_id" value="<?= htmlspecialchars($ticket_info['ticket_id']) ?>">
-                        <button type="submit" class="btn btn-success btn-lg px-5 py-3">
+                        <button type="submit" class="btn btn-success btn-lg px-5 py-3" id="checkinBtn">
                             <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
                             <strong>CHECK IN</strong>
                         </button>
