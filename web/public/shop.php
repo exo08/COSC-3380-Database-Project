@@ -488,7 +488,7 @@ include __DIR__ . '/templates/header.php';
         document.getElementById('cart-count').textContent = count;
     }
     
-    function showToast(itemName) {
+    function showToast(itemName, type = 'success') {
         // Remove any existing toasts
         const existingToast = document.querySelector('.cart-toast');
         if (existingToast) {
@@ -498,15 +498,28 @@ include __DIR__ . '/templates/header.php';
         // Create toast element
         const toast = document.createElement('div');
         toast.className = 'cart-toast';
-        toast.innerHTML = `
-            <div class="cart-toast-icon">
-                <i class="bi bi-check"></i>
-            </div>
-            <div class="cart-toast-content">
-                <div class="cart-toast-title">Added to Cart!</div>
-                <div class="cart-toast-message">${itemName}</div>
-            </div>
-        `;
+        
+        if (type === 'info') {
+            toast.innerHTML = `
+                <div class="cart-toast-icon" style="background: #3498db;">
+                    <i class="bi bi-info"></i>
+                </div>
+                <div class="cart-toast-content">
+                    <div class="cart-toast-title">Cart Empty</div>
+                    <div class="cart-toast-message">${itemName}</div>
+                </div>
+            `;
+        } else {
+            toast.innerHTML = `
+                <div class="cart-toast-icon">
+                    <i class="bi bi-check"></i>
+                </div>
+                <div class="cart-toast-content">
+                    <div class="cart-toast-title">Added to Cart!</div>
+                    <div class="cart-toast-message">${itemName}</div>
+                </div>
+            `;
+        }
         
         document.body.appendChild(toast);
         
@@ -534,17 +547,17 @@ include __DIR__ . '/templates/header.php';
         localStorage.setItem('museumCart', JSON.stringify(cart));
         updateCartCount();
         
-        // instead of page alert 
+        // Show toast notification instead of alert
         showToast(itemName);
     }
     
     function viewCart() {
         if (cart.length === 0) {
-            alert('Your cart is empty!');
+            showToast('Add some items to get started!', 'info');
             return;
         }
         
-        // redirect to checkout page (not implemented yet)
+        // redirect to checkout page 
         window.location.href = 'shop/checkout.php';
     }
     
