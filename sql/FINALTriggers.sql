@@ -1,3 +1,5 @@
+DELIMITER $
+
 -- Trigger 1: Check stock availability and warn when low
 -- This prevents sales when stock is insufficient and warns when stock is low
 CREATE TRIGGER `trg_validate_stock_before_sale` BEFORE INSERT ON `SALE_ITEM`
@@ -26,8 +28,8 @@ FOR EACH ROW BEGIN
     SET @low_stock_warning = CONCAT('Warning: ', item_name_var, ' is low on stock. Only ', 
                                      (current_stock - NEW.quantity), ' remaining.');
   END IF;
-END;
-
+END$
+  
 -- Trigger 2: Validate member benefits but allow expired members to purchase
 -- This checks membership status only if trying to apply a discount
 CREATE TRIGGER `trg_validate_member_discount` BEFORE INSERT ON `SALE`
@@ -52,4 +54,6 @@ FOR EACH ROW BEGIN
   
   -- If member_id is set but discount_amount is NULL or 0, sale proceeds normally
   -- If member_id is NULL (visitor purchase), sale proceeds normally
-END;
+END$
+
+DELIMITER ;
