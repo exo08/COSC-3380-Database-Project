@@ -2,6 +2,18 @@
 session_start();
 $error = '';
 $success = '';
+$timeout_message = '';
+
+// Check for timeout message
+if (isset($_SESSION['timeout_message'])) {
+    $timeout_message = $_SESSION['timeout_message'];
+    unset($_SESSION['timeout_message']);
+}
+
+// Check for timeout reason in URL
+if (isset($_GET['reason']) && $_GET['reason'] === 'timeout' && !$timeout_message) {
+    $timeout_message = 'You have been logged out due to inactivity. Please log in again.';
+}
 
 // check for login
 if(isset($_SESSION['username'])){
@@ -34,6 +46,10 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
             $_SESSION['role'] = $user['user_type'];  // Added for compatibility with shop system
             $_SESSION['email'] = $user['email'];
             $_SESSION['linked_id'] = $user['linked_id'];
+            
+            // Initialize session timeout tracking
+            $_SESSION['last_activity'] = time();
+            $_SESSION['created'] = time();
             
             // If user is a member, get their member details and set member_id
             if ($user['user_type'] === 'member' && $user['linked_id']) {
@@ -266,6 +282,12 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 background: #efe;
                 color: #3c3;
             }
+
+            .alert-warning {
+                background: #fff3cd;
+                color: #856404;
+                border-left: 4px solid #ffc107;
+            }
         </style>
     </head>
     <body>
@@ -286,6 +308,13 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 </div>
                 
                 <div class="login-body">
+                    <?php if ($timeout_message): ?>
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="bi bi-clock-history"></i> <?= htmlspecialchars($timeout_message) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <?php endif; ?>
+                    
                     <?php if ($error): ?>
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>

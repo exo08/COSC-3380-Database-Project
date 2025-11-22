@@ -1,4 +1,7 @@
 <?php
+// Session timeout management
+require_once __DIR__ . '/../app/session.php';
+
 // main layout header with sidebar navigation
 // goes at the top of the dashboard pages
 

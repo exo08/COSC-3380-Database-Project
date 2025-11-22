@@ -50,11 +50,15 @@ try {
         exit;
     }
     
-    // Get sale items
+    // Get sale items with category information
     $items_query = "
-        SELECT sli.*, si.item_name, si.category
+        SELECT sli.*, 
+               si.item_name, 
+               si.category_id,
+               c.name as category_name
         FROM SALE_ITEM sli
         JOIN SHOP_ITEM si ON sli.item_id = si.item_id
+        LEFT JOIN CATEGORY c ON si.category_id = c.category_id
         WHERE sli.sale_id = ?
         ORDER BY si.item_name
     ";
