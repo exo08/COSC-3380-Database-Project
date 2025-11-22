@@ -12,6 +12,52 @@ $success = '';
 $error = '';
 $selected_event = null;
 
+// Membership type mapping
+function getMembershipTypeName($type) {
+    $types = [
+        1 => 'Student',
+        2 => 'Individual',
+        3 => 'Family',
+        4 => 'Patron',
+        5 => 'Benefactor'
+    ];
+    return $types[$type] ?? 'Member';
+}
+
+// ajax member search
+if (isset($_GET['search_members'])) {
+    header('Content-Type: application/json');
+    $search = trim($_GET['q'] ?? '');
+    
+    if (strlen($search) < 2) {
+        echo json_encode(['members' => []]);
+        exit;
+    }
+    
+    $search_param = '%' . $search . '%';
+    $stmt = $db->prepare("
+        SELECT member_id, first_name, last_name, email, membership_type
+        FROM MEMBER 
+        WHERE expiration_date >= CURDATE()
+        AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)
+        ORDER BY last_name, first_name
+        LIMIT 10
+    ");
+    $stmt->bind_param('sss', $search_param, $search_param, $search_param);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $members = [];
+    while ($row = $result->fetch_assoc()) {
+        // display membership type name
+        $row['membership_type_name'] = getMembershipTypeName($row['membership_type']);
+        $members[] = $row;
+    }
+    
+    echo json_encode(['members' => $members]);
+    exit;
+}
+
 // Get event details if event_id is provided
 if (isset($_GET['event_id'])) {
     $event_id = intval($_GET['event_id']);
@@ -66,65 +112,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $member_id = intval($_POST['member_id']);
                 
             } elseif ($customer_type === 'new_visitor') {
-                // Create new visitor - DIRECT INSERT (bypassing stored procedure)
+                // Create new visitor
                 $first_name = trim($_POST['first_name']);
                 $last_name = trim($_POST['last_name']);
                 $email = trim($_POST['email']);
                 $phone = trim($_POST['phone']);
                 $is_student = isset($_POST['is_student']) ? 1 : 0;
-                $created_at = date('Y-m-d');
-    
-                // Validate
-                if (empty($first_name)) {
-                    throw new Exception("First name is required");
+                
+                $stmt = $db->prepare("CALL CreateVisitor(?, ?, ?, ?, ?, @new_visitor_id)");
+                $stmt->bind_param('ssssi', $first_name, $last_name, $email, $phone, $is_student);
+                
+                if ($stmt->execute()) {
+                    $result = $db->query("SELECT @new_visitor_id as visitor_id");
+                    $new_visitor = $result->fetch_assoc();
+                    $visitor_id = $new_visitor['visitor_id'];
+                    $stmt->close();
+                } else {
+                    throw new Exception($db->error);
                 }
-                if (empty($email)) {
-                    throw new Exception("Email is required");
-                }
-    
-                // Use direct INSERT with proper NULL handling
-                if (empty($last_name)) {
-                    $last_name = null;
-                }
-                if (empty($phone)) {
-                    $phone = null;
-                }
-    
-                // Direct INSERT instead of stored procedure
-                $stmt = $db->prepare("
-                    INSERT INTO VISITOR (first_name, last_name, is_student, email, phone, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-    
-                $stmt->bind_param('ssisss', $first_name, $last_name, $is_student, $email, $phone, $created_at);
-    
-                if (!$stmt->execute()) {
-                    throw new Exception("Failed to create visitor: " . $stmt->error);
-                }
-    
-                $visitor_id = $db->insert_id;
-                $stmt->close();
             }
             
-            // Create ticket
-            $checked_in = 0;
-            $check_in_time = null;
+            // Create ticket using stored procedure CreateTicket(8 param)
+            // p_event_id, p_visitor_id, p_member_id, p_purchase_date, p_quantity, p_checked_in, p_check_in_time, p_ticket_id
+            $checked_in = 0;  // not checked in yet
+            $check_in_time = null;  // no checkin time yet
             
             $stmt = $db->prepare("CALL CreateTicket(?, ?, ?, ?, ?, ?, ?, @new_ticket_id)");
-            $stmt->bind_param('iiisiss', $event_id, $visitor_id, $member_id, $purchase_date, $quantity, $checked_in, $check_in_time);
+            $stmt->bind_param('iiiisii', $event_id, $visitor_id, $member_id, $purchase_date, $quantity, $checked_in, $check_in_time);
             
             if ($stmt->execute()) {
-                $stmt->close();
-                $db->next_result();
-                
                 $result = $db->query("SELECT @new_ticket_id as ticket_id");
-                $row = $result->fetch_assoc();
-                $ticket_id = $row['ticket_id'];
+                $new_ticket = $result->fetch_assoc();
+                $success = "Ticket sale successful! Ticket ID: " . $new_ticket['ticket_id'];
+                $stmt->close();
                 
-                $success = "Ticket #$ticket_id sold successfully!";
-                logActivity('create', 'TICKET', $ticket_id, "Sold $quantity ticket(s) for event #$event_id");
+                logActivity('ticket_sold', 'TICKET', $new_ticket['ticket_id'], "Sold $quantity ticket(s) for event $event_id");
                 
-                // Refresh event data
+                // Refresh event details
                 if ($selected_event) {
                     $stmt = $db->prepare("
                         SELECT 
@@ -170,101 +194,161 @@ $upcoming_events = $db->query("
     LIMIT 20
 ")->fetch_all(MYSQLI_ASSOC);
 
-// Get members for dropdown
-$members = $db->query("
-    SELECT member_id, first_name, last_name, email 
-    FROM MEMBER 
-    WHERE expiration_date >= CURDATE()
-    ORDER BY last_name, first_name
-")->fetch_all(MYSQLI_ASSOC);
-
 include __DIR__ . '/../templates/layout_header.php';
 ?>
 
 <style>
-.event-selector-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 30px;
-}
-
-.event-info-card {
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    border-left: 5px solid #007bff;
-}
-
 .customer-type-btn {
-    padding: 20px;
     border: 2px solid #dee2e6;
-    border-radius: 10px;
-    cursor: pointer;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
     transition: all 0.3s;
+    cursor: pointer;
 }
 
 .customer-type-btn:hover {
-    border-color: #007bff;
-    background: #f8f9fa;
+    border-color: #0d6efd;
+    background-color: #f8f9fa;
 }
 
 .customer-type-btn.active {
-    border-color: #007bff;
-    background: #e7f1ff;
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+}
+
+.member-search-results {
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.member-search-result {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.member-search-result:hover {
+    background-color: #f8f9fa;
+}
+
+.member-search-result:last-child {
+    border-bottom: none;
+}
+
+.member-search-result .member-name {
+    font-weight: 600;
+    color: #212529;
+}
+
+.member-search-result .member-email {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.member-search-result .member-type {
+    font-size: 0.75rem;
+    color: #0d6efd;
+}
+
+.selected-member-display {
+    display: none;
+    padding: 12px;
+    background-color: #e7f1ff;
+    border: 1px solid #0d6efd;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.selected-member-display.show {
+    display: block;
 }
 </style>
 
-<?php if ($success): ?>
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-ticket-perforated"></i> Sell Event Tickets</h2>
+        <a href="manage.php" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Events
+        </a>
     </div>
-<?php endif; ?>
 
-<?php if ($error): ?>
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <?php if ($success): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($error): ?>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle"></i> <?= htmlspecialchars($error) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Event Selection -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Select Event</h5>
+            <div class="row">
+                <?php foreach ($upcoming_events as $event): ?>
+                    <?php
+                    $available = $event['capacity'] - $event['tickets_sold'];
+                    $is_selected = $selected_event && $selected_event['event_id'] == $event['event_id'];
+                    ?>
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 <?= $is_selected ? 'border-primary' : '' ?>">
+                            <div class="card-body">
+                                <h6 class="card-title"><?= htmlspecialchars($event['name']) ?></h6>
+                                <p class="text-muted mb-2">
+                                    <i class="bi bi-calendar"></i> <?= date('M d, Y', strtotime($event['event_date'])) ?><br>
+                                    <i class="bi bi-geo-alt"></i> <?= htmlspecialchars($event['location_name']) ?>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-<?= $available > 0 ? 'success' : 'danger' ?>">
+                                        <?= $available ?> available
+                                    </span>
+                                    <?php if ($available > 0): ?>
+                                        <a href="?event_id=<?= $event['event_id'] ?>" class="btn btn-sm btn-primary">
+                                            Select
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="text-danger">Sold Out</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
     </div>
-<?php endif; ?>
-
-<!-- Event Selector -->
-<div class="event-selector-card">
-    <h4 class="mb-3"><i class="bi bi-calendar-event"></i> Select Event</h4>
-    <form method="GET">
-        <select class="form-select form-select-lg" name="event_id" onchange="this.form.submit()" required>
-            <option value="">Choose an event...</option>
-            <?php foreach ($upcoming_events as $event): 
-                $available = $event['capacity'] - $event['tickets_sold'];
-                $sold_out = $available <= 0;
-            ?>
-                <option value="<?= $event['event_id'] ?>" 
-                        <?= ($selected_event && $selected_event['event_id'] == $event['event_id']) ? 'selected' : '' ?>
-                        <?= $sold_out ? 'disabled' : '' ?>>
-                    <?= htmlspecialchars($event['name']) ?> - <?= date('M j, Y', strtotime($event['event_date'])) ?> 
-                    (<?= $available ?> available)
-                    <?= $sold_out ? ' - SOLD OUT' : '' ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </form>
 </div>
 
 <?php if ($selected_event): ?>
-    <!-- Event Information -->
-    <div class="event-info-card mb-4">
-        <h4 class="mb-4"><?= htmlspecialchars($selected_event['name']) ?></h4>
-        <div class="row">
+    <!-- Selected Event Details -->
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-calendar-event"></i> <?= htmlspecialchars($selected_event['name']) ?></h5>
+        </div>
+        <div class="row g-0 p-3">
             <div class="col-md-3">
-                <h6 class="text-muted">Date</h6>
-                <p><?= date('l, F j, Y', strtotime($selected_event['event_date'])) ?></p>
+                <h6 class="text-muted">Date & Time</h6>
+                <p><?= date('l, M d, Y', strtotime($selected_event['event_date'])) ?><br></p>
             </div>
             <div class="col-md-3">
                 <h6 class="text-muted">Location</h6>
-                <p><?= htmlspecialchars($selected_event['location_name'] ?? 'TBD') ?></p>
+                <p><?= htmlspecialchars($selected_event['location_name']) ?></p>
             </div>
             <div class="col-md-3">
                 <h6 class="text-muted">Capacity</h6>
@@ -280,7 +364,7 @@ include __DIR__ . '/../templates/layout_header.php';
         
         <?php if ($selected_event['description']): ?>
             <hr>
-            <p class="text-muted mb-0"><?= htmlspecialchars($selected_event['description']) ?></p>
+            <p class="text-muted mb-0 px-3 pb-3"><?= htmlspecialchars($selected_event['description']) ?></p>
         <?php endif; ?>
     </div>
 
@@ -293,6 +377,7 @@ include __DIR__ . '/../templates/layout_header.php';
                 <form method="POST" id="sellTicketForm">
                     <input type="hidden" name="action" value="sell">
                     <input type="hidden" name="event_id" value="<?= $selected_event['event_id'] ?>">
+                    <input type="hidden" name="member_id" id="selected_member_id" value="">
                     
                     <!-- Customer Type Selection -->
                     <div class="mb-4">
@@ -304,7 +389,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                     <label for="type_member" class="d-block" style="cursor: pointer;">
                                         <i class="bi bi-star fs-3 d-block mb-2"></i>
                                         <strong>Existing Member</strong>
-                                        <p class="text-muted mb-0 small">Select from member list</p>
+                                        <p class="text-muted mb-0 small">Search by name or email</p>
                                     </label>
                                 </div>
                             </div>
@@ -321,19 +406,29 @@ include __DIR__ . '/../templates/layout_header.php';
                         </div>
                     </div>
                     
-                    <!-- Member Selection -->
+                    <!-- Member Search Section -->
                     <div id="memberSection" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label">Select Member *</label>
-                            <select class="form-select" name="member_id">
-                                <option value="">Choose member...</option>
-                                <?php foreach ($members as $member): ?>
-                                    <option value="<?= $member['member_id'] ?>">
-                                        <?= htmlspecialchars($member['first_name'] . ' ' . $member['last_name']) ?> 
-                                        (<?= htmlspecialchars($member['email']) ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="mb-3 position-relative">
+                            <label class="form-label">Search for Member *</label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="memberSearch" 
+                                   placeholder="Type member's first name, last name, or email..."
+                                   autocomplete="off">
+                            <div id="memberSearchResults" class="member-search-results"></div>
+                        </div>
+                        
+                        <!-- Selected Member Display -->
+                        <div id="selectedMemberDisplay" class="selected-member-display">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Selected Member:</strong>
+                                    <div id="selectedMemberInfo" class="mt-1"></div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearMemberSelection()">
+                                    <i class="bi bi-x"></i> Clear
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -342,21 +437,21 @@ include __DIR__ . '/../templates/layout_header.php';
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">First Name *</label>
-                                <input type="text" class="form-control" name="first_name">
+                                <input type="text" class="form-control" name="first_name" id="visitor_first_name">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Last Name *</label>
-                                <input type="text" class="form-control" name="last_name">
+                                <input type="text" class="form-control" name="last_name" id="visitor_last_name">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Email *</label>
-                                <input type="email" class="form-control" name="email">
+                                <input type="email" class="form-control" name="email" id="visitor_email">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Phone</label>
-                                <input type="tel" class="form-control" name="phone">
+                                <input type="tel" class="form-control" name="phone" id="visitor_phone">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -398,6 +493,9 @@ include __DIR__ . '/../templates/layout_header.php';
 <?php endif; ?>
 
 <script>
+let searchTimeout;
+let selectedMember = null;
+
 function selectCustomerType(type) {
     // Update radio buttons
     document.querySelectorAll('input[name="customer_type"]').forEach(radio => {
@@ -416,17 +514,133 @@ function selectCustomerType(type) {
     
     // Set required fields
     if (type === 'member') {
-        document.querySelector('select[name="member_id"]').required = true;
-        document.querySelector('input[name="first_name"]').required = false;
-        document.querySelector('input[name="last_name"]').required = false;
-        document.querySelector('input[name="email"]').required = false;
+        document.getElementById('visitor_first_name').required = false;
+        document.getElementById('visitor_last_name').required = false;
+        document.getElementById('visitor_email').required = false;
     } else {
-        document.querySelector('select[name="member_id"]').required = false;
-        document.querySelector('input[name="first_name"]').required = true;
-        document.querySelector('input[name="last_name"]').required = true;
-        document.querySelector('input[name="email"]').required = true;
+        document.getElementById('visitor_first_name').required = true;
+        document.getElementById('visitor_last_name').required = true;
+        document.getElementById('visitor_email').required = true;
+        clearMemberSelection();
     }
 }
+
+// Member search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('memberSearch');
+    const resultsDiv = document.getElementById('memberSearchResults');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchMembers(query);
+            }, 300);
+        });
+        
+        // Close results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.style.display = 'none';
+            }
+        });
+        
+        // Reopen results when clicking on input
+        searchInput.addEventListener('focus', function() {
+            if (resultsDiv.innerHTML && this.value.length >= 2) {
+                resultsDiv.style.display = 'block';
+            }
+        });
+    }
+});
+
+function searchMembers(query) {
+    const resultsDiv = document.getElementById('memberSearchResults');
+    resultsDiv.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm"></div> Searching...</div>';
+    resultsDiv.style.display = 'block';
+    
+    fetch(`?search_members=1&q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.members.length === 0) {
+                resultsDiv.innerHTML = '<div class="p-3 text-muted text-center">No members found</div>';
+            } else {
+                resultsDiv.innerHTML = data.members.map(member => `
+                    <div class="member-search-result" onclick='selectMember(${JSON.stringify(member)})'>
+                        <div class="member-name">${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</div>
+                        <div class="member-email">${escapeHtml(member.email)}</div>
+                        <div class="member-type">${escapeHtml(member.membership_type_name)}</div>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            resultsDiv.innerHTML = '<div class="p-3 text-danger">Error searching members</div>';
+        });
+}
+
+function selectMember(member) {
+    selectedMember = member;
+    
+    // Set hidden field
+    document.getElementById('selected_member_id').value = member.member_id;
+    
+    // Update display
+    document.getElementById('selectedMemberInfo').innerHTML = `
+        <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong><br>
+        <small class="text-muted">${escapeHtml(member.email)}</small>
+    `;
+    
+    // Show selected member display
+    document.getElementById('selectedMemberDisplay').classList.add('show');
+    
+    // Clear and hide search
+    document.getElementById('memberSearch').value = '';
+    document.getElementById('memberSearchResults').style.display = 'none';
+}
+
+function clearMemberSelection() {
+    selectedMember = null;
+    document.getElementById('selected_member_id').value = '';
+    document.getElementById('selectedMemberDisplay').classList.remove('show');
+    document.getElementById('memberSearch').value = '';
+    document.getElementById('memberSearchResults').innerHTML = '';
+    document.getElementById('memberSearchResults').style.display = 'none';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Form validation
+document.getElementById('sellTicketForm')?.addEventListener('submit', function(e) {
+    const customerType = document.querySelector('input[name="customer_type"]:checked');
+    
+    if (!customerType) {
+        e.preventDefault();
+        alert('Please select a customer type');
+        return false;
+    }
+    
+    if (customerType.value === 'member') {
+        if (!document.getElementById('selected_member_id').value) {
+            e.preventDefault();
+            alert('Please search for and select a member');
+            return false;
+        }
+    }
+});
 </script>
 
 <?php include __DIR__ . '/../templates/layout_footer.php'; ?>

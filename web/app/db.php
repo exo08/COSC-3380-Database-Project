@@ -22,7 +22,8 @@ function db(): mysqli {
         http_response_code(500);
         die('Database connection error.');
     }
-    
+
     $connection->set_charset('utf8mb4');
+    $connection->query("SET time_zone = '-06:00'"); // set MySQL to CST
     return $connection;
 }

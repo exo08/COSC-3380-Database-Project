@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $membership_type = intval($_POST['membership_type'] ?? 1);
-    $is_student = isset($_POST['is_student']) ? 1 : 0;
+    $is_student = ($membership_type == 1) ? 1 : 0; // set is_student based on membership type
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
             ");
             
-            $stmt->bind_param("sssssiiis", 
+            $stmt->bind_param("sssssiiss", 
                 $first_name, $last_name, $email, $phone, $address,
                 $membership_type, $is_student, $start_date, $expiration_date
             );
@@ -118,7 +118,7 @@ $membership_types = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Become a Member - Museum of Fine Arts</title>
+    <title>Become a Member - Homies Fine Arts</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -334,16 +334,6 @@ $membership_types = [
                                 </label>
                             </div>
                         <?php endforeach; ?>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="is_student" name="is_student"
-                                   <?= isset($_POST['is_student']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="is_student">
-                                I am a student (Valid student ID required for verification)
-                            </label>
-                        </div>
                     </div>
 
                     <hr class="my-4">

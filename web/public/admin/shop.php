@@ -24,16 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $item_id = $_POST['item_id'] ?? null;
         $item_name = trim($_POST['item_name']);
         $description = trim($_POST['description']);
-        $category = trim($_POST['category']);
+        $category_id = (int)$_POST['category_id'];
         $price = (float)$_POST['price'];
         $quantity = (int)$_POST['quantity_in_stock'];
 
         if ($_POST['action'] === 'add') {
             $stmt = $db->prepare("
-                INSERT INTO SHOP_ITEM (item_name, description, category, price, quantity_in_stock)
+                INSERT INTO SHOP_ITEM (item_name, description, category_id, price, quantity_in_stock)
                 VALUES (?, ?, ?, ?, ?)
             ");
-            $stmt->bind_param("sssdi", $item_name, $description, $category, $price, $quantity);
+            $stmt->bind_param("ssidi", $item_name, $description, $category_id, $price, $quantity);
             
             if ($stmt->execute()) {
                 $success = "Shop item created successfully!";
@@ -45,10 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             $stmt = $db->prepare("
                 UPDATE SHOP_ITEM 
-                SET item_name = ?, description = ?, category = ?, price = ?, quantity_in_stock = ?
+                SET item_name = ?, description = ?, category_id = ?, price = ?, quantity_in_stock = ?
                 WHERE item_id = ?
             ");
-            $stmt->bind_param("sssdii", $item_name, $description, $category, $price, $quantity, $item_id);
+            $stmt->bind_param("ssidii", $item_name, $description, $category_id, $price, $quantity, $item_id);
             
             if ($stmt->execute()) {
                 $success = "Shop item updated successfully!";
@@ -60,12 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     } elseif ($_POST['action'] === 'delete') {
         $item_id = $_POST['item_id'];
-        $stmt = $db->prepare("DELETE FROM SHOP_ITEM WHERE item_id = ?");
+        
+        // Soft delete mark as deleted instead of actually deleting
+        $stmt = $db->prepare("UPDATE SHOP_ITEM SET is_deleted = 1 WHERE item_id = ?");
         $stmt->bind_param("i", $item_id);
         
         if ($stmt->execute()) {
             $success = "Shop item deleted successfully!";
-            logActivity('shop_item_deleted', 'SHOP_ITEM', $item_id, "Deleted shop item");
+            logActivity('shop_item_deleted', 'SHOP_ITEM', $item_id, "Soft deleted shop item");
         } else {
             $error = "Error deleting item: " . $db->error;
         }
@@ -73,9 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// Get all shop items with sales data
+// Get all shop items with sales data excluding soft deleted items
 $items_query = "
     SELECT si.*, 
+           c.name as category_name,
            COUNT(DISTINCT sli.sale_id) as times_sold,
            SUM(sli.quantity) as total_quantity_sold,
            SUM(sli.quantity * sli.price_at_sale) as total_revenue,
@@ -85,7 +88,9 @@ $items_query = "
                ELSE 'In Stock'
            END as stock_status
     FROM SHOP_ITEM si
+    LEFT JOIN CATEGORY c ON si.category_id = c.category_id
     LEFT JOIN SALE_ITEM sli ON si.item_id = sli.item_id
+    WHERE si.is_deleted = 0
     GROUP BY si.item_id
     ORDER BY si.item_name
 ";
@@ -93,9 +98,16 @@ $items_query = "
 $items_result = $db->query($items_query);
 $items = $items_result ? $items_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// Get categories for filter
-$categories = array_unique(array_column($items, 'category'));
-sort($categories);
+// Get categories from CATEGORY lookup table only active categories
+$category_query = "SELECT category_id, name, description FROM CATEGORY WHERE is_active = 1 ORDER BY name";
+$category_result = $db->query($category_query);
+
+if ($category_result) {
+    $category_options = $category_result->fetch_all(MYSQLI_ASSOC);
+} else {
+    // in case query fails 
+    $category_options = [];
+}
 
 // Get shop stats
 $stats = [];
@@ -272,8 +284,8 @@ include __DIR__ . '/../templates/layout_header.php';
             <div class="col-md-6">
                 <select class="form-select" id="categoryFilter">
                     <option value="">All Categories</option>
-                    <?php foreach ($categories as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+                    <?php foreach ($category_options as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat['name']) ?>"><?= htmlspecialchars($cat['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -292,7 +304,7 @@ include __DIR__ . '/../templates/layout_header.php';
             <?php foreach ($items as $item): 
                 $stock_class = $item['stock_status'] === 'Low Stock' ? 'low-stock' : ($item['stock_status'] === 'Out of Stock' ? 'out-of-stock' : '');
             ?>
-                <div class="col-md-4 item-card-container" data-category="<?= htmlspecialchars($item['category']) ?>" data-stock="<?= htmlspecialchars($item['stock_status']) ?>">
+                <div class="col-md-4 item-card-container" data-category="<?= htmlspecialchars($item['category_name']) ?>" data-stock="<?= htmlspecialchars($item['stock_status']) ?>">
                     <div class="card item-card <?= $stock_class ?>">
                         <div class="card-body position-relative">
                             <span class="badge stock-badge bg-<?= $item['stock_status'] === 'In Stock' ? 'success' : ($item['stock_status'] === 'Low Stock' ? 'warning' : 'danger') ?>">
@@ -301,7 +313,7 @@ include __DIR__ . '/../templates/layout_header.php';
                             
                             <h5 class="card-title mb-2"><?= htmlspecialchars($item['item_name']) ?></h5>
                             <p class="text-muted small mb-3">
-                                <span class="badge bg-secondary"><?= htmlspecialchars($item['category']) ?></span>
+                                <span class="badge bg-secondary"><?= htmlspecialchars($item['category_name']) ?></span>
                             </p>
                             
                             <?php if ($item['description']): ?>
@@ -334,7 +346,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                     <button class="btn btn-sm btn-outline-primary flex-grow-1" onclick="editItem(<?= htmlspecialchars(json_encode($item)) ?>)">
                                         <i class="bi bi-pencil"></i> Edit
                                     </button>
-                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this item?')">
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this item? It will be marked as deleted but kept in the database for audit purposes.')">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="item_id" value="<?= $item['item_id'] ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -429,12 +441,14 @@ include __DIR__ . '/../templates/layout_header.php';
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Category <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="category" id="itemCategory" list="categoryList" required>
-                            <datalist id="categoryList">
-                                <?php foreach ($categories as $cat): ?>
-                                    <option value="<?= htmlspecialchars($cat) ?>">
+                            <select class="form-select" name="category_id" id="itemCategoryId" required>
+                                <option value="">Select Category</option>
+                                <?php foreach ($category_options as $category): ?>
+                                    <option value="<?= $category['category_id'] ?>" title="<?= htmlspecialchars($category['description']) ?>">
+                                        <?= htmlspecialchars($category['name']) ?>
+                                    </option>
                                 <?php endforeach; ?>
-                            </datalist>
+                            </select>
                         </div>
                         
                         <div class="col-md-4 mb-3">
@@ -488,7 +502,7 @@ function resetItemForm() {
     document.getElementById('itemId').value = '';
     document.getElementById('itemName').value = '';
     document.getElementById('itemDescription').value = '';
-    document.getElementById('itemCategory').value = '';
+    document.getElementById('itemCategoryId').value = '';
     document.getElementById('itemPrice').value = '';
     document.getElementById('itemQuantity').value = '';
 }
@@ -499,7 +513,7 @@ function editItem(item) {
     document.getElementById('itemId').value = item.item_id;
     document.getElementById('itemName').value = item.item_name;
     document.getElementById('itemDescription').value = item.description || '';
-    document.getElementById('itemCategory').value = item.category;
+    document.getElementById('itemCategoryId').value = item.category_id;
     document.getElementById('itemPrice').value = item.price;
     document.getElementById('itemQuantity').value = item.quantity_in_stock;
     

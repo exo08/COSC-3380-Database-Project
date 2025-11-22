@@ -40,7 +40,7 @@ $exhibition_query = "
     LEFT JOIN EXHIBITION_ARTWORK ea ON e.exhibition_id = ea.exhibition_id
     WHERE e.is_deleted = 0
         AND (e.start_date BETWEEN ? AND ? OR e.end_date BETWEEN ? AND ?)
-    GROUP BY e.exhibition_id, e.title, e.start_date, e.end_date, e.theme_sponsor, e.curator_id, s.name
+    GROUP BY e.exhibition_id
     ORDER BY e.start_date DESC
 ";
 
@@ -79,10 +79,9 @@ foreach ($exhibitions as $exhibition) {
     $stmt->close();
 }
 
-// ========== EVENT STATISTICS - FIXED QUERY ==========
-// Using a subquery to ensure we get distinct events first, then join for aggregates
+// ========== EVENT STATISTICS ==========
 $event_query = "
-    SELECT DISTINCT
+    SELECT 
         ev.event_id,
         ev.name as event_name,
         ev.description,
@@ -91,22 +90,15 @@ $event_query = "
         ev.exhibition_id,
         ex.title as exhibition_title,
         loc.name as location_name,
-        COALESCE(ticket_stats.tickets_sold, 0) as tickets_sold,
-        COALESCE(ticket_stats.ticket_transactions, 0) as ticket_transactions,
-        COALESCE(ticket_stats.checked_in_count, 0) as checked_in_count
+        COALESCE(SUM(t.quantity), 0) as tickets_sold,
+        COUNT(DISTINCT t.ticket_id) as ticket_transactions,
+        COALESCE(SUM(CASE WHEN t.checked_in = 1 THEN t.quantity ELSE 0 END), 0) as checked_in_count
     FROM EVENT ev
     LEFT JOIN EXHIBITION ex ON ev.exhibition_id = ex.exhibition_id
     LEFT JOIN LOCATION loc ON ev.location_id = loc.location_id
-    LEFT JOIN (
-        SELECT 
-            event_id,
-            SUM(quantity) as tickets_sold,
-            COUNT(DISTINCT ticket_id) as ticket_transactions,
-            SUM(CASE WHEN checked_in = 1 THEN quantity ELSE 0 END) as checked_in_count
-        FROM TICKET
-        GROUP BY event_id
-    ) ticket_stats ON ev.event_id = ticket_stats.event_id
+    LEFT JOIN TICKET t ON ev.event_id = t.event_id
     WHERE ev.event_date BETWEEN ? AND ?
+    GROUP BY ev.event_id
     ORDER BY ev.event_date DESC
 ";
 
@@ -122,7 +114,6 @@ foreach ($events as &$event) {
     $event['available_tickets'] = max(0, $event['capacity'] - $event['tickets_sold']);
     $event['checkin_rate'] = $event['tickets_sold'] > 0 ? ($event['checked_in_count'] / $event['tickets_sold']) * 100 : 0;
 }
-unset($event);
 
 // Get ticket details for each event
 $event_tickets = [];
@@ -376,11 +367,10 @@ include __DIR__ . '/../templates/layout_header.php';
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($events as $event): ?>
+                            <?php foreach ($events as $idx => $event): ?>
                                 <?php $tickets = $event_tickets[$event['event_id']] ?? []; ?>
-                                
                                 <!-- Summary Row -->
-                                <tr class="expandable-row" data-target="event-detail-<?= $event['event_id'] ?>" onclick="toggleDetailRow(this)">
+                                <tr class="expandable-row" data-target="event-detail-<?= $idx ?>" onclick="toggleDetailRow(this)">
                                     <td style="padding-left: 2rem;">
                                         <strong><?= htmlspecialchars($event['event_name']) ?></strong>
                                         <?php if ($event['exhibition_title']): ?>
@@ -400,9 +390,8 @@ include __DIR__ . '/../templates/layout_header.php';
                                     </td>
                                     <td><small class="text-muted"><?= htmlspecialchars($event['location_name']) ?></small></td>
                                 </tr>
-                                
                                 <!-- Detail Row -->
-                                <tr class="detail-row" id="event-detail-<?= $event['event_id'] ?>">
+                                <tr class="detail-row" id="event-detail-<?= $idx ?>">
                                     <td colspan="6" style="padding: 0; background-color: #f8f9fa;">
                                         <div style="padding: 1rem 0; border-left: 3px solid #0d6efd; margin-left: 2rem;">
                                             <div style="padding: 0 1rem 0.5rem 1rem;">
@@ -436,6 +425,10 @@ include __DIR__ . '/../templates/layout_header.php';
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td class="text-end" style="padding: 0.75rem; width: 15%;">
+                                                                    <small class="text-muted">Capacity Used</small><br>
+                                                                    <strong><?= $event['capacity'] ?></strong>
+                                                                </td>
+                                                                <td class="text-end" style="padding: 0.75rem; width: 15%;">
                                                                     <small class="text-muted">Quantity</small><br>
                                                                     <strong><?= $ticket['quantity'] ?></strong>
                                                                 </td>
@@ -444,7 +437,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                                                         <?= htmlspecialchars($ticket['customer_type']) ?>
                                                                     </span>
                                                                 </td>
-                                                                <td style="padding: 0.75rem; width: 30%;">
+                                                                <td style="padding: 0.75rem; width: 15%;">
                                                                     <?php if ($ticket['customer_email']): ?>
                                                                         <small class="text-muted"><?= htmlspecialchars($ticket['customer_email']) ?></small>
                                                                     <?php endif; ?>
@@ -494,10 +487,10 @@ include __DIR__ . '/../templates/layout_header.php';
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($exhibitions as $exhibition): ?>
+                            <?php foreach ($exhibitions as $idx => $exhibition): ?>
                                 <?php $artworks = $exhibition_artworks[$exhibition['exhibition_id']] ?? []; ?>
                                 <!-- Summary Row -->
-                                <tr class="expandable-row" data-target="exhibition-detail-<?= $exhibition['exhibition_id'] ?>" onclick="toggleDetailRow(this)">
+                                <tr class="expandable-row" data-target="exhibition-detail-<?= $idx ?>" onclick="toggleDetailRow(this)">
                                     <td style="padding-left: 2rem;">
                                         <strong><?= htmlspecialchars($exhibition['title']) ?></strong>
                                         <?php if ($exhibition['curator_name']): ?>
@@ -511,7 +504,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                     <td><small class="text-muted"><?= htmlspecialchars($exhibition['theme_sponsor']) ?></small></td>
                                 </tr>
                                 <!-- Detail Row -->
-                                <tr class="detail-row" id="exhibition-detail-<?= $exhibition['exhibition_id'] ?>">
+                                <tr class="detail-row" id="exhibition-detail-<?= $idx ?>">
                                     <td colspan="6" style="padding: 0; background-color: #f8f9fa;">
                                         <div style="padding: 1rem 0; border-left: 3px solid #0d6efd; margin-left: 2rem;">
                                             <div style="padding: 0 1rem 0.5rem 1rem;">

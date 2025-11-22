@@ -315,7 +315,7 @@ include __DIR__ . '/../templates/layout_header.php';
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Category</label>
                             <select class="form-select" name="category_id" id="category_id">
-                                <option value="">-- Select Category --</option>
+                                <option value="">Select Category</option>
                                 <?php foreach ($categories as $cat): ?>
                                     <option value="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
                                 <?php endforeach; ?>

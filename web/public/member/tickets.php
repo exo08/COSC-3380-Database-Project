@@ -33,7 +33,6 @@ $tickets_query = "
            e.event_date,
            e.capacity,
            l.name as location_name,
-           l.address as location_address,
            ex.title as exhibition_title,
            CASE 
                WHEN e.event_date < CURDATE() THEN 'Past'
@@ -475,13 +474,6 @@ include __DIR__ . '/../templates/layout_header.php';
                                 </button>
                             <?php endif; ?>
                             
-                            <?php if ($ticket['event_status'] !== 'Past'): ?>
-                                <button class="btn btn-outline-primary" 
-                                        onclick="printTicket(<?= $ticket['ticket_id'] ?>)">
-                                    <i class="bi bi-printer"></i>
-                                </button>
-                            <?php endif; ?>
-                            
                             <a href="/events.php" class="btn btn-outline-secondary">
                                 <i class="bi bi-info-circle"></i>
                             </a>
@@ -588,11 +580,6 @@ function showDigitalTicket(ticket, member) {
     
     document.getElementById('digitalTicketContent').innerHTML = content;
     new bootstrap.Modal(document.getElementById('digitalTicketModal')).show();
-}
-
-function printTicket(ticketId) {
-    // In a real application, this would open a print-optimized version
-    alert('Print ticket #' + ticketId + '\n\nIn production, this would generate a printable PDF ticket.');
 }
 </script>
 
