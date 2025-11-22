@@ -27,29 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'renew') {
         $membership_type = intval($_POST['membership_type']);
         $payment_method = $_POST['payment_method'];
-        
-        // Calculate new expiration date (1 year from current expiration or today, whichever is later)
-        $current_expiration = $db->query("SELECT expiration_date FROM MEMBER WHERE member_id = $linked_id")->fetch_assoc()['expiration_date'];
-        
-        if (strtotime($current_expiration) > time()) {
-            // If current membership is still active extend from expiration date
-            $new_expiration = date('Y-m-d', strtotime($current_expiration . ' +1 year'));
-        } else {
-            // If expired, start from today
-            $new_expiration = date('Y-m-d', strtotime('+1 year'));
-        }
-        
+        // Calculate new expiration date 1 year from current day
+        $new_expiration = date('Y-m-d', strtotime('+1 year'));
+    
         // Update membership
         $stmt = $db->prepare("
             UPDATE MEMBER 
             SET membership_type = ?, 
                 expiration_date = ?,
-                start_date = CASE 
-                    WHEN expiration_date < CURDATE() THEN CURDATE() 
-                    ELSE start_date 
-                END
+                start_date = CURDATE()
             WHERE member_id = ?
         ");
+
         $stmt->bind_param("isi", $membership_type, $new_expiration, $linked_id);
         
         if ($stmt->execute()) {
@@ -59,36 +48,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             
             $success = "Membership renewed successfully! Your $type_name membership is now active until " . date('F j, Y', strtotime($new_expiration)) . ".";
             logActivity('membership_renewed', 'MEMBER', $linked_id, "Renewed membership: $type_name until $new_expiration");
-            
-            // In a real system you would process payment here for now we'll just log the renewal
         } else {
             $error = "Error renewing membership: " . $db->error;
         }
         $stmt->close();
         
     } elseif ($_POST['action'] === 'upgrade') {
-        // Calculate new expiration date (1 year from current expiration or today, whichever is later)
-        $current_expiration = $db->query("SELECT expiration_date FROM MEMBER WHERE member_id = $linked_id")->fetch_assoc()['expiration_date'];
-        
-        if (strtotime($current_expiration) > time()) {
-            // If current membership is still active, extend from expiration date
-            $new_expiration = date('Y-m-d', strtotime($current_expiration . ' +1 year'));
-        } else {
-            // If expired, start from today
-            $new_expiration = date('Y-m-d', strtotime('+1 year'));
-        }
-        
+        // Calculate new expiration date 1 year from current day
         $new_membership_type = intval($_POST['new_membership_type']);
-        
+        $new_expiration = date('Y-m-d', strtotime('+1 year'));
+    
         // Update membership
         $stmt = $db->prepare("
             UPDATE MEMBER 
             SET membership_type = ?, 
                 expiration_date = ?,
-                start_date = CASE 
-                    WHEN expiration_date < CURDATE() THEN CURDATE() 
-                    ELSE start_date 
-                END
+                start_date = CURDATE()
             WHERE member_id = ?
         ");
         $stmt->bind_param("isi", $new_membership_type, $new_expiration, $linked_id);
@@ -100,6 +75,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             logActivity('membership_upgraded', 'MEMBER', $linked_id, "Upgraded membership to: $type_name");
         } else {
             $error = "Error upgrading membership: " . $db->error;
+        }
+        $stmt->close();
+        
+    } elseif ($_POST['action'] === 'downgrade') {
+        $new_membership_type = intval($_POST['new_membership_type']);
+        
+        // 1 year from current day
+        $new_expiration = date('Y-m-d', strtotime('+1 year'));
+        
+        // Update membership
+        $stmt = $db->prepare("
+            UPDATE MEMBER 
+            SET membership_type = ?, 
+                expiration_date = ?,
+                start_date = CURDATE()
+            WHERE member_id = ?
+        ");
+        $stmt->bind_param("isi", $new_membership_type, $new_expiration, $linked_id);
+        
+        if ($stmt->execute()) {
+            $type_names = [1 => 'Student', 2 => 'Individual', 3 => 'Family', 4 => 'Patron', 5 => 'Benefactor'];
+            $type_name = $type_names[$new_membership_type];
+            $success = "Membership changed to $type_name successfully!";
+            logActivity('membership_downgraded', 'MEMBER', $linked_id, "Changed membership to: $type_name");
+        } else {
+            $error = "Error changing membership: " . $db->error;
         }
         $stmt->close();
         
@@ -121,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->bind_param("i", $linked_id);
             
             if ($stmt->execute()) {
-                $success = "Your membership has been cancelled. You will retain access until the end of today. We're sorry to see you go!";
+                $success = "Membership cancelled. It will expire at the end of today.";
                 logActivity('membership_cancelled', 'MEMBER', $linked_id, "Cancelled membership. Reason: " . ($reason ?: 'Not specified'));
             } else {
                 $error = "Error cancelling membership: " . $db->error;
@@ -276,11 +277,30 @@ include __DIR__ . '/../templates/layout_header.php';
 .payment-method-option input[type="radio"] {
     margin-right: 0.5rem;
 }
+
+.alert-soft-red {
+    background-color: #ffe0e0;
+    border: 1px solid #ffb3b3;
+    color: #8b0000;
+}
+
+.alert-soft-red .bi {
+    color: #d32f2f;
+}
+
+.alert-soft-red h4 {
+    color: #8b0000;
+}
 </style>
 
 <!-- Success/Error Messages -->
 <?php if ($success): ?>
-    <div class="alert alert-success alert-dismissible fade show">
+    <?php 
+    // check if is a cancellation message
+    $is_cancellation = strpos($success, 'cancelled') !== false;
+    $alert_class = $is_cancellation ? 'alert-soft-red' : 'alert-success';
+    ?>
+    <div class="alert <?= $alert_class ?> alert-dismissible fade show">
         <i class="bi bi-check-circle"></i> <?= htmlspecialchars($success) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -300,36 +320,38 @@ include __DIR__ . '/../templates/layout_header.php';
 </div>
 
 <!-- Status Alert -->
-<?php if ($is_expired): ?>
-    <div class="alert alert-danger status-alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-exclamation-circle fs-1 me-3"></i>
-            <div>
-                <h4 class="mb-1">Your Membership Has Expired</h4>
-                <p class="mb-0">Your membership expired <?= abs($member['days_until_expiration']) ?> days ago. Renew now to restore your benefits!</p>
+<?php if (empty($success) && empty($error)): ?>
+    <?php if ($is_expired): ?>
+        <div class="alert alert-danger status-alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-circle fs-1 me-3"></i>
+                <div>
+                    <h4 class="mb-1">Your Membership Has Expired</h4>
+                    <p class="mb-0">Your membership expired <?= abs($member['days_until_expiration']) ?> days ago. Renew now to restore your benefits!</p>
+                </div>
             </div>
         </div>
-    </div>
-<?php elseif ($is_expiring): ?>
-    <div class="alert alert-warning status-alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-clock fs-1 me-3"></i>
-            <div>
-                <h4 class="mb-1">Your Membership is Expiring Soon</h4>
-                <p class="mb-0">Your membership expires on <?= date('F j, Y', strtotime($member['expiration_date'])) ?>. Renew now to avoid interruption!</p>
+    <?php elseif ($is_expiring): ?>
+        <div class="alert alert-warning status-alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-clock fs-1 me-3"></i>
+                <div>
+                    <h4 class="mb-1">Your Membership is Expiring Soon</h4>
+                    <p class="mb-0">Your membership expires on <?= date('F j, Y', strtotime($member['expiration_date'])) ?>. Renew now to avoid interruption!</p>
+                </div>
             </div>
         </div>
-    </div>
-<?php else: ?>
-    <div class="alert alert-success status-alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-check-circle fs-1 me-3"></i>
-            <div>
-                <h4 class="mb-1">Your Membership is Active</h4>
-                <p class="mb-0">Current plan: <strong><?= $current_type['name'] ?></strong> | Valid until <?= date('F j, Y', strtotime($member['expiration_date'])) ?></p>
+    <?php else: ?>
+        <div class="alert alert-success status-alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle fs-1 me-3"></i>
+                <div>
+                    <h4 class="mb-1">Your Membership is Active</h4>
+                    <p class="mb-0">Current plan: <strong><?= $current_type['name'] ?></strong> | Valid until <?= date('F j, Y', strtotime($member['expiration_date'])) ?></p>
+                </div>
             </div>
         </div>
-    </div>
+    <?php endif; ?>
 <?php endif; ?>
 
 <!-- Membership Options -->
@@ -345,6 +367,7 @@ include __DIR__ . '/../templates/layout_header.php';
     <?php foreach ($membership_types as $type_id => $type_info): 
         $is_current = ($type_id == $member['membership_type']);
         $is_upgrade = ($type_id > $member['membership_type']);
+        $is_downgrade = ($type_id < $member['membership_type']);
         $is_recommended = ($is_expired && $type_id == 2) || ($is_expiring && $type_id == $member['membership_type']);
     ?>
         <div class="col-md-6 col-lg-4">
@@ -397,17 +420,23 @@ include __DIR__ . '/../templates/layout_header.php';
                     <button class="btn btn-outline-secondary w-100" disabled>
                         <i class="bi bi-check"></i> Current Plan
                     </button>
-                <?php elseif ($is_current || !$is_upgrade): ?>
+                <?php elseif ($is_current && ($is_expired || $is_expiring)): ?>
                     <button class="btn btn-primary w-100" data-bs-toggle="modal" 
                             data-bs-target="#renewModal" 
                             onclick="setRenewalType(<?= $type_id ?>, '<?= $type_info['name'] ?>', <?= $type_info['price'] ?>)">
                         <i class="bi bi-arrow-repeat"></i> Renew - $<?= number_format($type_info['price']) ?>
                     </button>
-                <?php else: ?>
+                <?php elseif ($is_upgrade): ?>
                     <button class="btn btn-success w-100" data-bs-toggle="modal" 
                             data-bs-target="#upgradeModal" 
                             onclick="setUpgradeType(<?= $type_id ?>, '<?= $type_info['name'] ?>', <?= $type_info['price'] ?>)">
                         <i class="bi bi-arrow-up-circle"></i> Upgrade - $<?= number_format($type_info['price']) ?>
+                    </button>
+                <?php elseif ($is_downgrade): ?>
+                    <button class="btn btn-warning w-100" data-bs-toggle="modal" 
+                            data-bs-target="#upgradeModal" 
+                            onclick="setDowngradeType(<?= $type_id ?>, '<?= $type_info['name'] ?>', <?= $type_info['price'] ?>)">
+                        <i class="bi bi-arrow-down-circle"></i> Downgrade - $<?= number_format($type_info['price']) ?>
                     </button>
                 <?php endif; ?>
             </div>
@@ -501,24 +530,24 @@ include __DIR__ . '/../templates/layout_header.php';
     </div>
 </div>
 
-<!-- Upgrade Modal -->
+<!-- Upgrade/Downgrade Modal -->
 <div class="modal fade" id="upgradeModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Upgrade Membership</h5>
+                <h5 class="modal-title" id="upgradeModalTitle">Change Membership</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
                 <div class="modal-body">
-                    <input type="hidden" name="action" value="upgrade">
+                    <input type="hidden" name="action" id="upgrade_action" value="upgrade">
                     <input type="hidden" name="new_membership_type" id="upgrade_type">
                     
-                    <div class="alert alert-success">
-                        <i class="bi bi-arrow-up-circle"></i> You are upgrading to <strong id="upgrade_type_name"></strong> membership.
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> You are <span id="upgrade_action_text">changing</span> to <strong id="upgrade_type_name"></strong> membership for <strong id="upgrade_price"></strong>/year.
                     </div>
                     
-                    <h5 class="mb-3">Upgrade Details</h5>
+                    <h5 class="mb-3">Membership Details</h5>
                     <div class="table-responsive mb-3">
                         <table class="table">
                             <tr>
@@ -530,7 +559,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                 <td><span id="upgrade_plan_details"></span></td>
                             </tr>
                             <tr>
-                                <td><strong>Upgrade Cost:</strong></td>
+                                <td><strong>Cost:</strong></td>
                                 <td><strong id="upgrade_cost"></strong></td>
                             </tr>
                         </table>
@@ -562,8 +591,8 @@ include __DIR__ . '/../templates/layout_header.php';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-arrow-up-circle"></i> Complete Upgrade
+                    <button type="submit" class="btn btn-success" id="upgrade_submit_btn">
+                        <i class="bi bi-arrow-up-circle"></i> <span id="upgrade_submit_text">Complete Change</span>
                     </button>
                 </div>
             </form>
@@ -630,13 +659,27 @@ function setRenewalType(typeId, typeName, price) {
 }
 
 function setUpgradeType(typeId, typeName, price) {
-    const currentPrice = <?= $current_type['price'] ?>;
-    const upgradeCost = price - currentPrice;
-    
     document.getElementById('upgrade_type').value = typeId;
     document.getElementById('upgrade_type_name').textContent = typeName;
+    document.getElementById('upgrade_price').textContent = '$' + price;
     document.getElementById('upgrade_plan_details').textContent = typeName + ' - $' + price + '/year';
-    document.getElementById('upgrade_cost').textContent = '$' + upgradeCost + ' (prorated difference)';
+    document.getElementById('upgrade_cost').textContent = '$' + price + '/year';
+    document.getElementById('upgrade_action').value = 'upgrade';
+    document.getElementById('upgrade_action_text').textContent = 'upgrading';
+    document.getElementById('upgradeModalTitle').textContent = 'Upgrade Membership';
+    document.getElementById('upgrade_submit_text').textContent = 'Complete Upgrade';
+}
+
+function setDowngradeType(typeId, typeName, price) {
+    document.getElementById('upgrade_type').value = typeId;
+    document.getElementById('upgrade_type_name').textContent = typeName;
+    document.getElementById('upgrade_price').textContent = '$' + price;
+    document.getElementById('upgrade_plan_details').textContent = typeName + ' - $' + price + '/year';
+    document.getElementById('upgrade_cost').textContent = '$' + price + '/year';
+    document.getElementById('upgrade_action').value = 'downgrade';
+    document.getElementById('upgrade_action_text').textContent = 'changing';
+    document.getElementById('upgradeModalTitle').textContent = 'Change Membership';
+    document.getElementById('upgrade_submit_text').textContent = 'Complete Change';
 }
 </script>
 

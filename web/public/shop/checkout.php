@@ -502,11 +502,9 @@ include __DIR__ . '/../templates/header.php';
     }
 
     function removeItem(index) {
-        if (confirm('Remove this item from cart?')) {
-            cart.splice(index, 1);
-            localStorage.setItem('museumCart', JSON.stringify(cart));
-            updateCartDisplay();
-        }
+        cart.splice(index, 1);
+        localStorage.setItem('museumCart', JSON.stringify(cart));
+        updateCartDisplay();
     }
 
     function selectPayment(value, element) {
