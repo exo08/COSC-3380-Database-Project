@@ -112,17 +112,16 @@ foreach ($all_shop_transactions as $transaction) {
 }
 
 // ========== MEMBERSHIP REVENUE ==========
-// Get membership registrations within date range
+// Get membership registrations within date range GROUP BY membership_type 
 $membership_revenue_query = "
     SELECT 
         membership_type,
-        is_student,
         COUNT(*) as member_count,
         MIN(start_date) as first_registration,
         MAX(start_date) as last_registration
     FROM MEMBER
     WHERE start_date BETWEEN ? AND ?
-    GROUP BY membership_type, is_student
+    GROUP BY membership_type
     ORDER BY membership_type
 ";
 
@@ -146,7 +145,6 @@ foreach ($membership_data as $membership) {
     $membership_revenue_detail[] = [
         'type_name' => $membership_names[$type],
         'type_id' => $type,
-        'is_student' => $membership['is_student'],
         'count' => $count,
         'price_per' => $base_price,
         'total_revenue' => $revenue,
@@ -166,7 +164,6 @@ $membership_registrations_query = "
         CONCAT(first_name, ' ', last_name) as member_name,
         email,
         membership_type,
-        is_student,
         start_date,
         expiration_date,
         auto_renew
@@ -181,9 +178,9 @@ $stmt->execute();
 $all_memberships = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Group memberships by type and student status
+// Group memberships by type 
 foreach ($all_memberships as $member) {
-    $key = $member['membership_type'] . '_' . $member['is_student'];
+    $key = $member['membership_type'];
     if (!isset($membership_registrations[$key])) {
         $membership_registrations[$key] = [];
     }
@@ -474,9 +471,16 @@ include __DIR__ . '/../templates/layout_header.php';
         </div>
     </div>
 
-    <!-- Revenue Breakdown Pie Chart -->
+    <!-- Revenue Breakdown Charts - Dynamic Layout Based on Filter -->
     <div class="row mb-4">
-        <div class="col-md-6">
+        <!-- revenue by source pie chart always shown -->
+        <div class="<?php 
+            if ($revenue_source === 'all') {
+                echo 'col-md-4';
+            } else {
+                echo 'col-md-6';
+            }
+        ?>">
             <div class="card h-100">
                 <div class="card-header bg-light">
                     <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Revenue by Source</h5>
@@ -488,7 +492,16 @@ include __DIR__ . '/../templates/layout_header.php';
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        
+        <!-- top selling shop items bar chart shown for all and shop -->
+        <?php if ($revenue_source === 'all' || $revenue_source === 'shop'): ?>
+        <div class="<?php 
+            if ($revenue_source === 'all') {
+                echo 'col-md-4';
+            } else {
+                echo 'col-md-6';
+            }
+        ?>">
             <div class="card h-100">
                 <div class="card-header bg-light">
                     <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top Selling Shop Items</h5>
@@ -500,6 +513,29 @@ include __DIR__ . '/../templates/layout_header.php';
                 </div>
             </div>
         </div>
+        <?php endif; ?>
+        
+        <!-- most popular memberships bar chart shown for all and memberships -->
+        <?php if ($revenue_source === 'all' || $revenue_source === 'memberships'): ?>
+        <div class="<?php 
+            if ($revenue_source === 'all') {
+                echo 'col-md-4';
+            } else {
+                echo 'col-md-6';
+            }
+        ?>">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-people-fill"></i> Most Popular Memberships</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="membershipChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- DETAILED DATA TABLES -->
@@ -582,7 +618,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                                                         <?= $trans['payment_method'] == 1 ? 'Cash' : ($trans['payment_method'] == 2 ? 'Credit' : 'Other') ?>
                                                                     </span>
                                                                 </td>
-                                                                <td class="text-end" style="padding: 0.75rem; width:15%;">
+                                                                <td class="text-end" style="padding: 0.75rem; width:10%;">
                                                                     <small class="text-muted">Price at Sale</small><br>
                                                                     $<?= number_format($trans['price_at_sale'], 2) ?>
                                                                 </td>
@@ -634,7 +670,6 @@ include __DIR__ . '/../templates/layout_header.php';
                     <thead>
                         <tr>
                             <th style="padding-left: 2rem;">Membership Type</th>
-                            <th>Student Status</th>
                             <th class="text-end">Price Per Membership</th>
                             <th class="text-end">Memberships Sold</th>
                             <th class="text-end">Total Revenue</th>
@@ -644,26 +679,19 @@ include __DIR__ . '/../templates/layout_header.php';
                     <tbody>
                         <?php if (empty($membership_revenue_detail)): ?>
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="5" class="text-center text-muted py-4">
                                     No membership registrations for the selected period
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($membership_revenue_detail as $idx => $membership): ?>
                                 <?php 
-                                $membership_key = $membership['type_id'] . '_' . $membership['is_student'];
+                                $membership_key = $membership['type_id'];
                                 $registrations = $membership_registrations[$membership_key] ?? [];
                                 ?>
                                 <!-- clickable rows -->
                                 <tr class="expandable-row" data-target="membership-detail-<?= $idx ?>" onclick="toggleDetailRow(this)">
                                     <td style="padding-left: 2rem;"><strong><?= htmlspecialchars($membership['type_name']) ?></strong></td>
-                                    <td>
-                                        <?php if ($membership['is_student']): ?>
-                                            <span class="badge bg-info">Student</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">Non-Student</span>
-                                        <?php endif; ?>
-                                    </td>
                                     <td class="text-end">$<?= number_format($membership['price_per'], 2) ?></td>
                                     <td class="text-end"><?= number_format($membership['count']) ?></td>
                                     <td class="text-end"><strong class="text-success">$<?= number_format($membership['total_revenue'], 2) ?></strong></td>
@@ -678,7 +706,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                 </tr>
                                 <!-- expandable rows hidden by default -->
                                 <tr class="detail-row" id="membership-detail-<?= $idx ?>">
-                                    <td colspan="6" style="padding: 0; background-color: #f8f9fa;">
+                                    <td colspan="5" style="padding: 0; background-color: #f8f9fa;">
                                         <div style="padding: 1rem 0; border-left: 3px solid #0d6efd; margin-left: 2rem;">
                                             <div style="padding: 0 1rem 0.5rem 1rem;">
                                                 <strong><i class="bi bi-people"></i> Individual Registrations</strong>
@@ -733,7 +761,6 @@ include __DIR__ . '/../templates/layout_header.php';
                             <?php endforeach; ?>
                             <tr class="table-secondary fw-bold">
                                 <td style="padding-left: 2rem;">TOTAL MEMBERSHIP REVENUE</td>
-                                <td></td>
                                 <td></td>
                                 <td class="text-end"><?= number_format($total_memberships_sold) ?></td>
                                 <td class="text-end text-success">$<?= number_format($total_membership_revenue, 2) ?></td>
@@ -924,44 +951,43 @@ new Chart(revenueTrendCtx, {
     }
 });
 
-// Revenue Source Pie Chart
-if (revenueSource === 'all') {
-    const revenueSourceCtx = document.getElementById('revenueSourceChart').getContext('2d');
-    new Chart(revenueSourceCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Shop Sales', 'Memberships'],
-            datasets: [{
-                data: [<?= $total_shop_revenue ?>, <?= $total_membership_revenue ?>],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(75, 192, 192, 0.8)'
-                ],
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.parsed;
-                            const total = <?= $total_revenue ?>;
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return context.label + ': $' + value.toFixed(2) + ' (' + percentage + '%)';
-                        }
+// revenue by source pie chart always shown
+const revenueSourceCtx = document.getElementById('revenueSourceChart').getContext('2d');
+
+new Chart(revenueSourceCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Shop Sales', 'Memberships'],
+        datasets: [{
+            data: [<?= $total_shop_revenue ?>, <?= $total_membership_revenue ?>],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(75, 192, 192, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const value = context.parsed;
+                        const total = <?= $total_revenue ?>;
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return context.label + ': $' + value.toFixed(2) + ' (' + percentage + '%)';
                     }
                 }
             }
         }
-    });
-}
+    }
+});
 
 // Top Items Bar Chart
 if ((revenueSource === 'all' || revenueSource === 'shop') && shopSalesDetail.length > 0) {
@@ -1008,6 +1034,55 @@ if ((revenueSource === 'all' || revenueSource === 'shop') && shopSalesDetail.len
             }
         }
     });
+}
+
+// most popular memberships bar chart
+if (revenueSource === 'all' || revenueSource === 'memberships') {
+    const membershipCtx = document.getElementById('membershipChart');
+    if (membershipCtx) {
+        const membershipData = <?= json_encode($membership_revenue_detail) ?>;
+        
+        if (membershipData && membershipData.length > 0) {
+            new Chart(membershipCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: membershipData.map(m => m.type_name),
+                    datasets: [{
+                        label: 'Members',
+                        data: membershipData.map(m => m.count),
+                        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Members: ' + context.parsed.x;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
 }
 
 // Function to toggle detail rows
