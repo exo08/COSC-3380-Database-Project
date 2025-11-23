@@ -32,7 +32,7 @@ BEGIN
     
     -- only check if this is a member sale
     IF NEW.member_id IS NOT NULL THEN
-        -- get members expiration date
+        -- Get member's expiration date
         SELECT expiration_date INTO member_expiration
         FROM MEMBER
         WHERE member_id = NEW.member_id;
@@ -40,8 +40,7 @@ BEGIN
         -- check if member exists and is expired
         IF member_expiration IS NOT NULL THEN
             IF member_expiration < CURDATE() THEN
-                -- member is EXPIRED will NOT get discount
-                -- warning message will be caught on app side
+                -- Member is EXPIRED will NOT get discount
                 SET validation_message = CONCAT(
                     'WARNING: Your membership expired on ', 
                     DATE_FORMAT(member_expiration, '%M %d, %Y'), 
@@ -52,6 +51,8 @@ BEGIN
                 
                 -- force discount to 0 since member is expired
                 SET NEW.discount_amount = 0.00;
+                -- Total stays as full price php sends the full subtotal
+                
             ELSE
                 -- member is ACTIVE will get discount
                 SET validation_message = CONCAT(
@@ -60,6 +61,9 @@ BEGIN
                     '. Thank you for being a valued member!'
                 );
                 SET msg_type = 'info';
+                
+                -- keep the discount php calculated subtract discount from total
+                SET NEW.total_amount = NEW.total_amount - NEW.discount_amount;
             END IF;
         ELSE
             -- member not found
@@ -75,7 +79,6 @@ BEGIN
     END IF;
     
     -- store the message for app to retrieve after sale is processed
-    -- we'll use a combination of member_id and timestamp as a session key
     IF validation_message IS NOT NULL THEN
         INSERT INTO SALE_VALIDATION_MESSAGES (session_key, member_id, message, message_type)
         VALUES (
@@ -103,15 +106,16 @@ BEGIN
   -- declare variables
   DECLARE new_stock_level INT;
   DECLARE reorder_thresh INT;
+  DECLARE reorder_qty INT;
   
   -- reduce stock by quantity sold
   UPDATE SHOP_ITEM
   SET quantity_in_stock = quantity_in_stock - NEW.quantity
   WHERE item_id = NEW.item_id;
   
-  -- get updated stock level and reorder threshold
-  SELECT quantity_in_stock, reorder_threshold
-  INTO new_stock_level, reorder_thresh
+  -- get updated stock level and reorder parameters
+  SELECT quantity_in_stock, reorder_threshold, reorder_quantity
+  INTO new_stock_level, reorder_thresh, reorder_qty
   FROM SHOP_ITEM
   WHERE item_id = NEW.item_id;
   
@@ -123,56 +127,27 @@ BEGIN
     SET new_stock_level = 0;
   END IF;
   
-  -- check if stock has fallen below reorder threshold
+  -- autoreorder logic: If stock falls below threshold automatically add reorder quantity
   IF new_stock_level <= reorder_thresh THEN
-    -- flag item for reorder
     UPDATE SHOP_ITEM
-    SET needs_reorder = TRUE,
-        last_reorder_alert = NOW()
-    WHERE item_id = NEW.item_id 
-    AND needs_reorder = FALSE;  -- Only update if not already flagged
+    SET quantity_in_stock = quantity_in_stock + reorder_qty,
+        did_auto_reorder = TRUE,
+        last_auto_reorder_date = NOW(),
+        pending_reorder_quantity = reorder_qty
+    WHERE item_id = NEW.item_id;
   END IF;
 END$$
 
 
 
--- TRIGGER 2.1: clear reorder flag when stock is replenished
--- EVENT: AFTER UPDATE ON SHOP_ITEM (when inventory is restocked)
--- CONDITION: IF quantity_in_stock increased AND now exceeds reorder_quantity
--- ACTION: Clear the needs_reorder flag
-
-CREATE TRIGGER trg_clear_reorder_flag 
-AFTER UPDATE ON SHOP_ITEM
-FOR EACH ROW
-BEGIN
-  -- check if stock increased and exceeds threshold
-  IF NEW.quantity_in_stock > OLD.quantity_in_stock THEN
-    -- If stock is now above reorder_quantity, clear the reorder flag
-    IF NEW.quantity_in_stock >= (NEW.reorder_quantity) THEN
-      -- clear reorder flag
-      UPDATE SHOP_ITEM
-      SET needs_reorder = FALSE
-      WHERE item_id = NEW.item_id;
-    END IF;
+-- TRIGGER 2.1: clear reorder flag when stock is manually edited
+CREATE TRIGGER trg_clear_auto_reorder_on_manual_update 
+BEFORE UPDATE ON SHOP_ITEM
+FOR EACH ROW BEGIN
+  -- If staff is manually editing the item clear the auto-reorder flag as it's been acknowledged
+  IF NEW.did_auto_reorder = 0 AND OLD.did_auto_reorder = 1 THEN
+    SET NEW.pending_reorder_quantity = 0;
   END IF;
 END$$
 
 DELIMITER ;
-
-
--- =========================================================
--- Query for shop staff dashboard to show items needing reorder
--- =========================================================
-/*
-SELECT 
-  item_id,
-  item_name,
-  quantity_in_stock,
-  reorder_threshold,
-  reorder_quantity,
-  last_reorder_alert,
-  DATEDIFF(NOW(), last_reorder_alert) AS days_since_alert
-FROM SHOP_ITEM
-WHERE needs_reorder = TRUE
-ORDER BY quantity_in_stock ASC, last_reorder_alert ASC;
-*/
