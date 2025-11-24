@@ -46,10 +46,12 @@ This is a comprehensive museum management system built for the University of Hou
 
 ### Local Setup
 
+**Use Website-file-structure branch for deployment, all of the file path names follow this structure**
+
 1. **Clone the Repository**
 2. **Configure Database Connection**
    
-   Edit `web/config.php` with your database credentials:
+   Edit `public/app/config.php` with your database credentials:
    ```php
    $servername = "localhost";
    $username = "your_db_username";
@@ -71,7 +73,7 @@ This is a comprehensive museum management system built for the University of Hou
 
 4. **Configure Web Server**
    
-   Point document root to `web/public/` directory
+   Point document root to `public/` directory
 
 5. **Access Application**
    
