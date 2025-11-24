@@ -160,9 +160,11 @@ $stmt->close();
 
 // Membership type names
 $membership_types = [
-    'student' => 'Student',
-    'individual' => 'Individual', 
-    'family' => 'Family'
+    '1' => 'Student',
+    '2' => 'Individual', 
+    '3' => 'Family',
+    '4' => 'Benefactor', 
+    '5' => 'Patron', 
 ];
 
 $membership_type_display = $membership_types[$member['membership_type']] ?? ucfirst($member['membership_type']);
@@ -415,7 +417,9 @@ include __DIR__ . '/../templates/layout_header.php';
             <div class="info-row">
                 <div class="info-label">Start Date</div>
                 <div class="info-value">
-                    <?= date('F j, Y', strtotime($member['start_date'])) ?>
+                    <?= !empty($member['start_date']) && $member['start_date'] !== '0000-00-00'
+                        ? date('F j, Y', strtotime($member['start_date']))
+                        : '<span class="text-muted">Not available</span>' ?>
                 </div>
             </div>
             
