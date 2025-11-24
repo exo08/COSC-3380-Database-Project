@@ -18,9 +18,11 @@ function hasPermission(string $action): bool {
     $permissions = [
         'curator' => [
             'view_artworks', 'add_artwork', 'edit_artwork', 'delete_artwork',
-            'view_artists', 'add_artist', 'edit_artist', 'view_exhibitions',
-            'add_exhibition', 'edit_exhibition', 'delete_exhibition',
-            'view_acquisitions', 'add_acquisition', 'view_locations', 'add_location', 'edit_location', 'report_collection', 'report_exhibitions', 'report_acquisitions'
+            'view_artists', 'add_artist', 'edit_artist', 
+            'view_exhibitions', 'add_exhibition', 'edit_exhibition', 'delete_exhibition',
+            'view_acquisitions', 'add_acquisition', 'edit_acquisitions', 'delete_acquisition',
+            'view_locations', 'add_location', 'edit_location', 
+            'report_collection', 'report_exhibitions', 'report_acquisitions'
         ],
         'shop_staff' => [
             'view_shop_items', 'add_shop_item', 'edit_shop_item',
