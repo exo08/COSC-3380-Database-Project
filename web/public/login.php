@@ -43,7 +43,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_type'] = $user['user_type'];
-            $_SESSION['role'] = $user['user_type'];  // Added for compatibility with shop system
+            $_SESSION['role'] = $user['user_type'];  // added for compatibility with shop system
             $_SESSION['email'] = $user['email'];
             $_SESSION['linked_id'] = $user['linked_id'];
             
@@ -51,7 +51,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
             $_SESSION['last_activity'] = time();
             $_SESSION['created'] = time();
             
-            // If user is a member, get their member details and set member_id
+            // If user is a member get their member details and set member_id
             if ($user['user_type'] === 'member' && $user['linked_id']) {
                 $member_stmt = $db->prepare("
                     SELECT member_id, first_name, last_name, membership_type, expiration_date 
@@ -65,7 +65,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
                 if ($member_result->num_rows > 0) {
                     $member = $member_result->fetch_assoc();
                     
-                    // SET THESE SESSION VARIABLES FOR SHOP DISCOUNT
+                    // session variables for member details
                     $_SESSION['member_id'] = $member['member_id'];
                     $_SESSION['first_name'] = $member['first_name'];
                     $_SESSION['last_name'] = $member['last_name'];

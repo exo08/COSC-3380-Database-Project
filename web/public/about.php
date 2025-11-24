@@ -176,7 +176,7 @@ include __DIR__ . '/templates/header.php';
         </div>
     </div>
 
-    <!-- Contact & Hours -->
+    <!-- Contact and Hours -->
     <div class="row">
         <div class="col-md-6">
             <div class="info-card">
