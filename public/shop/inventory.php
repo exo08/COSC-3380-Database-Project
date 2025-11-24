@@ -16,18 +16,24 @@ $db = db();
 $success = '';
 $error = '';
 
-// Handle Delete
+// handle delete
 if (isset($_POST['delete_item'])) {
     requirePermission('edit_shop_item');
     $item_id = intval($_POST['item_id']);
     
     try {
-        if ($db->query("DELETE FROM SHOP_ITEM WHERE item_id = $item_id")) {
+        // is_deleted = 1 instead of actually deleting
+        $stmt = $db->prepare("UPDATE SHOP_ITEM SET is_deleted = 1 WHERE item_id = ?");
+        $stmt->bind_param("i", $item_id);
+        
+        if ($stmt->execute()) {
             $success = 'Item deleted successfully!';
-            logActivity('shop_item_deleted', 'SHOP_ITEM', $item_id, "Deleted shop item ID: $item_id");
+            logActivity('shop_item_deleted', 'SHOP_ITEM', $item_id, "Soft deleted shop item ID: $item_id");
         } else {
             $error = 'Error deleting item: ' . $db->error;
         }
+        
+        $stmt->close();
     } catch (Exception $e) {
         $error = 'Error deleting item: ' . $e->getMessage();
     }
@@ -41,6 +47,8 @@ if (isset($_POST['save_item'])) {
     $category_id = !empty($_POST['category_id']) ? intval($_POST['category_id']) : null;
     $price = floatval($_POST['price']);
     $quantity_in_stock = intval($_POST['quantity_in_stock']);
+    $reorder_threshold = !empty($_POST['reorder_threshold']) ? intval($_POST['reorder_threshold']) : 10;
+    $reorder_quantity = !empty($_POST['reorder_quantity']) ? intval($_POST['reorder_quantity']) : 50;
     
     try {
         if ($item_id) { // update existing
@@ -51,10 +59,12 @@ if (isset($_POST['save_item'])) {
                     description = ?,
                     category_id = ?,
                     price = ?,
-                    quantity_in_stock = ?
+                    quantity_in_stock = ?,
+                    reorder_threshold = ?,
+                    reorder_quantity = ?
                     WHERE item_id = ?");
             
-            $stmt->bind_param("ssidii", $item_name, $description, $category_id, $price, $quantity_in_stock, $item_id);
+            $stmt->bind_param("ssidiiii", $item_name, $description, $category_id, $price, $quantity_in_stock, $reorder_threshold, $reorder_quantity, $item_id);
             
             if ($stmt->execute()) {
                 $success = 'Item updated successfully!';
@@ -65,9 +75,9 @@ if (isset($_POST['save_item'])) {
         } else { // insert new
             requirePermission('add_shop_item');
             
-            // Insert directly instead of using stored procedure (if procedure doesn't exist or needs updating)
-            $stmt = $db->prepare("INSERT INTO SHOP_ITEM (item_name, description, category_id, price, quantity_in_stock) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssidi", $item_name, $description, $category_id, $price, $quantity_in_stock);
+            // Insert with reorder parameters
+            $stmt = $db->prepare("INSERT INTO SHOP_ITEM (item_name, description, category_id, price, quantity_in_stock, reorder_threshold, reorder_quantity) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssidiii", $item_name, $description, $category_id, $price, $quantity_in_stock, $reorder_threshold, $reorder_quantity);
             
             if ($stmt->execute()) {
                 $new_item_id = $db->insert_id;
@@ -115,9 +125,12 @@ try {
             si.category_id,
             c.name as category_name,
             si.price,
-            si.quantity_in_stock
+            si.quantity_in_stock,
+            si.reorder_threshold,
+            si.reorder_quantity
         FROM SHOP_ITEM si
         LEFT JOIN CATEGORY c ON si.category_id = c.category_id
+        WHERE si.is_deleted = 0
         ORDER BY si.item_name
     ");
     
@@ -341,6 +354,33 @@ include __DIR__ . '/../templates/layout_header.php';
                             <input type="number" class="form-control" name="quantity_in_stock" id="quantity_in_stock" min="0" required>
                         </div>
                     </div>
+                    
+                    <!-- reorder settings section for trigger -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">
+                                <i class="bi bi-arrow-repeat"></i> Automatic Reorder Settings
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Reorder Threshold *
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="When stock falls to or below this number, automatic reorder is triggered"></i>
+                                    </label>
+                                    <input type="number" class="form-control" name="reorder_threshold" id="reorder_threshold" min="0" value="10" required>
+                                    <small class="text-muted">Trigger reorder when stock reaches this level</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Reorder Quantity *
+                                        <i class="bi bi-info-circle" data-bs-toggle="tooltip" title="How many units to automatically add when reorder is triggered"></i>
+                                    </label>
+                                    <input type="number" class="form-control" name="reorder_quantity" id="reorder_quantity" min="1" value="50" required>
+                                    <small class="text-muted">Amount to add when reordering</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -411,6 +451,12 @@ include __DIR__ . '/../templates/layout_header.php';
 </div>
 
 <script>
+// Initialize Bootstrap tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
 function clearForm() {
     document.getElementById('modalTitle').textContent = 'Add New Item';
     document.getElementById('item_id').value = '';
@@ -419,6 +465,8 @@ function clearForm() {
     document.getElementById('category_id').value = '';
     document.getElementById('price').value = '';
     document.getElementById('quantity_in_stock').value = '0';
+    document.getElementById('reorder_threshold').value = '10';
+    document.getElementById('reorder_quantity').value = '50';
 }
 
 function editItem(item) {
@@ -429,6 +477,8 @@ function editItem(item) {
     document.getElementById('category_id').value = item.category_id || '';
     document.getElementById('price').value = item.price || '';
     document.getElementById('quantity_in_stock').value = item.quantity_in_stock || '0';
+    document.getElementById('reorder_threshold').value = item.reorder_threshold || '10';
+    document.getElementById('reorder_quantity').value = item.reorder_quantity || '50';
     
     new bootstrap.Modal(document.getElementById('itemModal')).show();
 }
