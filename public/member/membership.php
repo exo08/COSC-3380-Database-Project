@@ -159,6 +159,27 @@ $current_type = $membership_types[$member['membership_type']];
 $is_expired = $member['membership_status'] === 'Expired';
 $is_expiring = $member['membership_status'] === 'Expiring Soon';
 
+// calculate member savings and activity
+$savings_query = "
+    SELECT 
+        COALESCE(SUM(s.discount_amount), 0) as shop_savings,
+        COUNT(DISTINCT s.sale_id) as shop_purchases,
+        (SELECT COUNT(*) FROM TICKET t WHERE t.member_id = ?) as ticket_count
+    FROM SALE s
+    WHERE s.member_id = ?
+";
+$stmt = $db->prepare($savings_query);
+$stmt->bind_param("ii", $linked_id, $linked_id);
+$stmt->execute();
+$savings_result = $stmt->get_result();
+$savings_data = $savings_result->fetch_assoc();
+$stmt->close();
+
+$shop_savings = floatval($savings_data['shop_savings'] ?? 0);
+$shop_purchase_count = intval($savings_data['shop_purchases'] ?? 0);
+$ticket_count = intval($savings_data['ticket_count'] ?? 0);
+$total_savings = $shop_savings;
+
 include __DIR__ . '/../templates/layout_header.php';
 ?>
 
@@ -291,6 +312,49 @@ include __DIR__ . '/../templates/layout_header.php';
 .alert-soft-red h4 {
     color: #8b0000;
 }
+
+.savings-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 15px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.savings-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.savings-card.primary {
+    border-color: #28a745;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(40, 167, 69, 0.02));
+}
+
+.savings-card i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.savings-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.savings-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.savings-detail {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
 </style>
 
 <!-- Success/Error Messages -->
@@ -352,6 +416,65 @@ include __DIR__ . '/../templates/layout_header.php';
             </div>
         </div>
     <?php endif; ?>
+<?php endif; ?>
+
+<!-- member savings -->
+<?php if (!$is_expired): ?>
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <h4 class="mb-3"><i class="bi bi-graph-up"></i> Your Membership Value</h4>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="savings-card primary">
+            <i class="bi bi-piggy-bank text-success"></i>
+            <div class="savings-label">Total Savings</div>
+            <div class="savings-value text-success">$<?= number_format($total_savings, 2) ?></div>
+            <div class="savings-detail text-muted">
+                <?php if ($total_savings >= $current_type['price']): ?>
+                    <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Membership paid off!</span>
+                <?php else: ?>
+                    $<?= number_format($current_type['price'] - $total_savings, 2) ?> until break-even
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="savings-card">
+            <i class="bi bi-bag text-primary"></i>
+            <div class="savings-label">Shop Purchases</div>
+            <div class="savings-value text-primary"><?= $shop_purchase_count ?></div>
+            <div class="savings-detail">
+                <span class="text-success">$<?= number_format($shop_savings, 2) ?> saved</span>
+                <br>
+                <small class="text-muted">10% member discount</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="savings-card">
+            <i class="bi bi-ticket-perforated text-info"></i>
+            <div class="savings-label">Events Attended</div>
+            <div class="savings-value text-info"><?= $ticket_count ?></div>
+            <div class="savings-detail text-muted">
+                <?= $ticket_count > 0 ? $ticket_count . ' event' . ($ticket_count != 1 ? 's' : '') : 'No events yet' ?>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="savings-card">
+            <i class="bi bi-star text-warning"></i>
+            <div class="savings-label">Membership Cost</div>
+            <div class="savings-value text-dark">$<?= number_format($current_type['price'], 2) ?></div>
+            <div class="savings-detail text-muted">
+                <?= $current_type['name'] ?> / year
+            </div>
+        </div>
+    </div>
+</div>
 <?php endif; ?>
 
 <!-- Membership Options -->
