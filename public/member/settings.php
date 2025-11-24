@@ -132,6 +132,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->commit();
                 $success = "Password changed successfully!";
             }
+            // toggle auto renew
+            elseif ($_POST['action'] === 'toggle_auto_renew') {
+                $new_auto_renew = isset($_POST['auto_renew']) ? 1 : 0;
+                
+                // update auto_renew flag
+                $stmt = $db->prepare("UPDATE MEMBER SET auto_renew = ? WHERE member_id = ?");
+                $stmt->bind_param('ii', $new_auto_renew, $linked_id);
+                
+                if (!$stmt->execute()) {
+                    throw new Exception("Failed to update auto-renew setting: " . $stmt->error);
+                }
+                $stmt->close();
+                
+                $status_text = $new_auto_renew ? 'enabled' : 'disabled';
+                logActivity('update', 'MEMBER', $linked_id, "Auto-renew " . $status_text);
+                
+                $db->commit();
+                $success = "Auto-renew has been " . $status_text . " successfully!";
+            }
         }
         
     } catch (Exception $e) {
@@ -158,14 +177,15 @@ $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Membership type names
 $membership_types = [
-    'student' => 'Student',
-    'individual' => 'Individual', 
-    'family' => 'Family'
+    1 => 'Student',
+    2 => 'Individual', 
+    3 => 'Family',
+    4 => 'Benefactor', 
+    5 => 'Patron'
 ];
 
-$membership_type_display = $membership_types[$member['membership_type']] ?? ucfirst($member['membership_type']);
+$membership_type_display = $membership_types[$member['membership_type']] ?? 'Unknown';
 
 include __DIR__ . '/../templates/layout_header.php';
 ?>
@@ -248,6 +268,56 @@ include __DIR__ . '/../templates/layout_header.php';
 .alert-settings {
     border-radius: 10px;
     border-left: 4px solid;
+}
+
+/* toggle switch for auto renew */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #28a745;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.auto-renew-form {
+    display: inline-block;
 }
 </style>
 
@@ -415,7 +485,9 @@ include __DIR__ . '/../templates/layout_header.php';
             <div class="info-row">
                 <div class="info-label">Start Date</div>
                 <div class="info-value">
-                    <?= date('F j, Y', strtotime($member['start_date'])) ?>
+                    <?= !empty($member['start_date']) && $member['start_date'] !== '0000-00-00'
+                        ? date('F j, Y', strtotime($member['start_date']))
+                        : '<span class="text-muted">Not available</span>' ?>
                 </div>
             </div>
             
@@ -438,15 +510,34 @@ include __DIR__ . '/../templates/layout_header.php';
             <div class="info-row">
                 <div class="info-label">Auto-Renew</div>
                 <div class="info-value">
-                    <?php if ($member['auto_renew']): ?>
-                        <span class="info-badge bg-success text-white">
-                            <i class="bi bi-check-circle"></i> Enabled
+                    <form method="POST" id="autoRenewForm" class="auto-renew-form">
+                        <input type="hidden" name="action" value="toggle_auto_renew">
+                        <label class="toggle-switch">
+                            <input type="checkbox" 
+                                   name="auto_renew" 
+                                   id="autoRenewToggle"
+                                   <?= $member['auto_renew'] ? 'checked' : '' ?>
+                                   onchange="this.form.submit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="ms-2">
+                            <?php if ($member['auto_renew']): ?>
+                                <span class="text-success fw-bold">
+                                    <i class="bi bi-check-circle"></i> Enabled
+                                </span>
+                            <?php else: ?>
+                                <span class="text-secondary">
+                                    <i class="bi bi-x-circle"></i> Disabled
+                                </span>
+                            <?php endif; ?>
                         </span>
-                    <?php else: ?>
-                        <span class="info-badge bg-secondary text-white">
-                            <i class="bi bi-x-circle"></i> Disabled
-                        </span>
-                    <?php endif; ?>
+                    </form>
+                    <br><small class="text-muted mt-2 d-block">
+                        <i class="bi bi-info-circle"></i> 
+                        <?= $member['auto_renew'] 
+                            ? 'Your membership will renew automatically' 
+                            : 'Toggle on to enable automatic renewal' ?>
+                    </small>
                 </div>
             </div>
             
