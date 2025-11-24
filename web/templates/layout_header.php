@@ -30,7 +30,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $page_title ?? 'Dashboard' ?> - Museum HFA</title>
+    <title><?= $page_title ?? 'Dashboard' ?> - HFA Museum</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -120,7 +120,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <!-- logo -->
                 <div class="sidebar-header text-center">
                     <h4 class="text-white mb-0">
-                        <i class="bi bi-bank2"></i> Museum HFA
+                        <i class="bi bi-bank2"></i> HFA Museum 
                     </h4>
                 </div>
 
