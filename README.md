@@ -217,6 +217,11 @@ This is a comprehensive museum management system built for the University of Hou
    - Try accessing shop functions as event staff → Should redirect
    - Verify each role can only access appropriate features
 
+6. **Artwork Donation:**
+   - Donate artwork by filling out the donation form
+   - Login as curator and navigate to acquisitions page
+   - Review the donation and accept or reject
+
 ---
 
 ##  Database Schema
