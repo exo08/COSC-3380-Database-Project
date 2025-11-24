@@ -115,6 +115,7 @@ if (isset($_POST['reject_reorder'])) {
         $error = "Error: " . $e->getMessage();
     }
 }
+
 // redirect back to dashboard with message
 if ($success) {
     header("Location: /dashboard.php?success=" . urlencode($success));

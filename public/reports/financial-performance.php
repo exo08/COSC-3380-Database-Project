@@ -740,7 +740,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                                                 </td>
                                                                 
                                                                 <td class="text-end" style="padding: 0.75rem; width: 12.5%;">
-                                                                    <small class="text-muted">Revenue</small><br>
+                                                                    <!--<small class="text-muted">Revenue</small><br>-->
                                                                     <strong class="text-success">$<?= number_format($membership['price_per'], 2) ?></strong>
                                                                 </td>
                                                                 <td style="padding: 0.75rem; width: 25%;">

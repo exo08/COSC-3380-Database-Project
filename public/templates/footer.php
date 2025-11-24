@@ -19,7 +19,7 @@
                 </div>
                 <div class="col-md-4">
                     <h5 class="mb-3">Visit us</h5>
-                    <p><i class="bi bi-geo-alt"></i> 123 Money St<br>Laundering, TX 00000</p>
+                    <p><i class="bi bi-geo-alt"></i> 123 Money St<br>Laundering, XO 00000</p>
                     <p><i class="bi bi-telephone"></i> (123) 456-7890</p>
                     <p><i class="bi bi-envelope"></i> info@hfa.com</p>
                     <div class="mt-3">

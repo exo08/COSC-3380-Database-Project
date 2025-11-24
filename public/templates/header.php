@@ -225,7 +225,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <!-- Navigation -->
         <nav class="navbar navbar-expand-lg main-navbar sticky-top">
             <div class="container">
-                <a class="navbar-brand" href="index.php">
+                <a class="navbar-brand" href="/index.php">
                     <i class="bi bi-bank2"></i> HFA Museum
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -234,44 +234,44 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav mx-auto">
                         <li class="nav-item">
-                            <a class="nav-link <?php echo ($current_page == 'index.php') ? 'active' : ''; ?>" href="index.php">
+                            <a class="nav-link <?php echo ($current_page == 'index.php') ? 'active' : ''; ?>" href="/index.php">
                                 <i class="bi bi-house"></i> Home
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo ($current_page == 'events.php') ? 'active' : ''; ?>" href="events.php">
+                            <a class="nav-link <?php echo ($current_page == 'events.php') ? 'active' : ''; ?>" href="/events.php">
                                 <i class="bi bi-calendar-event"></i> Events
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo ($current_page == 'exhibitions.php') ? 'active' : ''; ?>" href="exhibitions.php">
+                            <a class="nav-link <?php echo ($current_page == 'exhibitions.php') ? 'active' : ''; ?>" href="/exhibitions.php">
                                 <i class="bi bi-easel"></i> Exhibitions
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo ($current_page == 'shop.php') ? 'active' : ''; ?>" href="shop.php">
+                            <a class="nav-link <?php echo ($current_page == 'shop.php') ? 'active' : ''; ?>" href="/shop.php">
                                 <i class="bi bi-shop"></i> Gift Shop
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <?php echo ($current_page == 'about.php') ? 'active' : ''; ?>" href="about.php">
+                            <a class="nav-link <?php echo ($current_page == 'about.php') ? 'active' : ''; ?>" href="/about.php">
                                 <i class="bi bi-info-circle"></i> About
                             </a>
                         </li>
                     </ul>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-donate" onclick="window.location.href='donate.php'">
+                        <button class="btn btn-donate" onclick="window.location.href='/donate.php'">
                             <i class="bi bi-heart"></i> Donate
                         </button>
                         <?php if ($is_logged_in): ?>
-                            <button class="btn btn-account" onclick="window.location.href='dashboard.php'">
+                            <button class="btn btn-account" onclick="window.location.href='/dashboard.php'">
                                 <i class="bi bi-person-circle"></i> My Account
                             </button>
                         <?php else: ?>
-                            <button class="btn btn-login" onclick="window.location.href='login.php'">
+                            <button class="btn btn-login" onclick="window.location.href='/login.php'">
                                 <i class="bi bi-box-arrow-in-right"></i> Login
                             </button>
-                            <button class="btn btn-outline-light" onclick="window.location.href='register.php'">
+                            <button class="btn btn-outline-light" onclick="window.location.href='/register.php'">
                                 <i class="bi bi-person-plus"></i> Sign Up
                             </button>
                         <?php endif; ?>

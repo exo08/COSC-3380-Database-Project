@@ -352,13 +352,13 @@ $membership_types = [
                         <label class="form-label">Password <span class="text-danger">*</span></label>
                         <input type="password" class="form-control" name="password" required
                                minlength="8" placeholder="At least 8 characters">
-                        <small class="text-muted">Must be at least 8 characters. Use letters, numbers, and symbols for better security.</small>
+                        <small class="text-muted">Use a strong password with letters, numbers, and symbols</small>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
                         <input type="password" class="form-control" name="confirm_password" required
-                               minlength="8" placeholder="At least 8 characters">
+                               minlength="8">
                     </div>
 
                     <div class="mb-3">

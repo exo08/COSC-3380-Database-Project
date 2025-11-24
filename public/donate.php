@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $db->begin_transaction();
                 
-                // check if donor exists or create new donor
+                // First, check if donor exists or create new donor
                 $donor_id = null;
                 
                 if (!$is_anonymous && !empty($email)) {
@@ -139,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $donor_id = $row['donor_id'];
                 }
                 
+
                 // Store all submission data as json
                 $submission_data = json_encode([
                     'artwork_title' => $artwork_title,
@@ -148,14 +149,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'width' => $width,
                     'depth' => $depth,
                     'description' => $description,
-                    'artist_first_name' => $artist_first_name,
-                    'artist_last_name' => $artist_last_name,
-                    'artist_birth_year' => $artist_birth_year,
-                    'artist_death_year' => $artist_death_year,
-                    'artist_nationality' => $artist_nationality,
-                    'artist_bio' => $artist_bio,
-                    'estimated_value' => $estimated_value
-                ]);
+                    'estimated_value' => $estimated_value,
+                    'artist' => [
+                        'first_name' => $artist_first_name,
+                        'last_name' => $artist_last_name,
+                        'birth_year' => $artist_birth_year,
+                        'death_year' => $artist_death_year,
+                        'nationality' => $artist_nationality,
+                        'bio' => $artist_bio,
+                    ],
+                ]); // updated artist object to store all info
                 
                 // Create acquisition record WITHOUT artwork_id
                 $acquisition_date = date('Y-m-d');

@@ -132,11 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->commit();
                 $success = "Password changed successfully!";
             }
-            // toggle auto renew
+            // Toggle auto renew
             elseif ($_POST['action'] === 'toggle_auto_renew') {
                 $new_auto_renew = isset($_POST['auto_renew']) ? 1 : 0;
                 
-                // update auto_renew flag
+                // Update auto_renew flag
                 $stmt = $db->prepare("UPDATE MEMBER SET auto_renew = ? WHERE member_id = ?");
                 $stmt->bind_param('ii', $new_auto_renew, $linked_id);
                 
@@ -177,6 +177,7 @@ $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// Membership type names
 $membership_types = [
     1 => 'Student',
     2 => 'Individual', 
@@ -270,7 +271,7 @@ include __DIR__ . '/../templates/layout_header.php';
     border-left: 4px solid;
 }
 
-/* toggle switch for auto renew */
+/* Toggle Switch Styling */
 .toggle-switch {
     position: relative;
     display: inline-block;

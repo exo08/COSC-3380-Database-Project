@@ -400,7 +400,7 @@ include __DIR__ . '/../templates/layout_header.php';
     </div>
 <?php endif; ?>
 
-<!-- Today's events summary -->
+<!-- Todays events summary -->
 <?php if (!empty($today_events)): ?>
     <div class="card">
         <div class="card-body">

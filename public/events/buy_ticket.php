@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $purchase_member_id = $member_id;
                 
             } else {
-                // Guest/Visitor purchase - collect info
+                // Guest/Visitor purchase collect info
                 $first_name = trim($_POST['first_name'] ?? '');
                 $last_name = trim($_POST['last_name'] ?? '');
                 $email = trim($_POST['email'] ?? '');
@@ -88,16 +88,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     throw new Exception("Please fill in all required fields.");
                 }
                 
-                // Create visitor record
-                $stmt = $db->prepare("CALL CreateVisitor(?, ?, ?, ?, ?, ?, @new_visitor_id)");
-                $stmt->bind_param('sissss', $first_name, $last_name, $is_student, $email, $phone, $created_at);
+                // Check if visitor already exists by email
+                $stmt = $db->prepare("SELECT visitor_id FROM VISITOR WHERE email = ? LIMIT 1");
+                $stmt->bind_param('s', $email);
                 $stmt->execute();
+                $result = $stmt->get_result();
+                $existing_visitor = $result->fetch_assoc();
                 $stmt->close();
-                $db->next_result();
                 
-                $result = $db->query("SELECT @new_visitor_id as visitor_id");
-                $row = $result->fetch_assoc();
-                $visitor_id = $row['visitor_id'];
+                if ($existing_visitor) {
+                    // Use existing visitor
+                    $visitor_id = $existing_visitor['visitor_id'];
+                    
+                    // Optionally update their information if provided
+                    $stmt = $db->prepare("
+                        UPDATE VISITOR 
+                        SET first_name = ?, last_name = ?, phone = COALESCE(NULLIF(?, ''), phone), is_student = ?
+                        WHERE visitor_id = ?
+                    ");
+                    $stmt->bind_param('sssii', $first_name, $last_name, $phone, $is_student, $visitor_id);
+                    $stmt->execute();
+                    $stmt->close();
+                    
+                } else {
+                    // Create new visitor record 
+                    // CreateVisitor(first_name, last_name, is_student, email, phone, created_at, OUT visitor_id)
+                    $stmt = $db->prepare("CALL CreateVisitor(?, ?, ?, ?, ?, ?, @new_visitor_id)");
+                    // string, string, int, string, string, string (date as string)
+                    $stmt->bind_param('ssisss', $first_name, $last_name, $is_student, $email, $phone, $created_at);
+                    $stmt->execute();
+                    $stmt->close();
+                    $db->next_result();
+                    
+                    $result = $db->query("SELECT @new_visitor_id as visitor_id");
+                    $row = $result->fetch_assoc();
+                    $visitor_id = $row['visitor_id'];
+                }
             }
             
             // Create ticket

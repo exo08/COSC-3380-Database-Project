@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Define timeout duration (5 minutes = 300 seconds)
-define('SESSION_TIMEOUT', 300); // 5 minutes in seconds
+define('SESSION_TIMEOUT', 600); // 5 minutes in seconds
 
 // Check if user is logged in
 if (isset($_SESSION['user_id'])) {
@@ -30,7 +30,7 @@ if (isset($_SESSION['user_id'])) {
             
             // Start new session for the timeout message
             session_start();
-            $_SESSION['timeout_message'] = 'Logged out due to more than 5 minutes of inactivity';
+            $_SESSION['timeout_message'] = 'Logged out due to more than 10 minutes of inactivity';
             
             // Redirect to login page
             header('Location: /login.php?reason=timeout');
@@ -42,7 +42,7 @@ if (isset($_SESSION['user_id'])) {
     $_SESSION['last_activity'] = time();
 }
 
-// Optional: Session security - regenerate session ID periodically
+// Session security
 if (!isset($_SESSION['created'])) {
     $_SESSION['created'] = time();
 } else if (time() - $_SESSION['created'] > 1800) {
