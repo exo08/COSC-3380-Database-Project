@@ -61,12 +61,11 @@ $expiring_soon = $db->query($expiring_query)->fetch_assoc()['count'];
 $tier_query = "
     SELECT 
         membership_type,
-        is_student,
         COUNT(*) as member_count,
         SUM(CASE WHEN expiration_date >= CURDATE() THEN 1 ELSE 0 END) as active_count,
         SUM(CASE WHEN auto_renew = 1 THEN 1 ELSE 0 END) as auto_renew_count
     FROM MEMBER
-    GROUP BY membership_type, is_student
+    GROUP BY membership_type
     ORDER BY membership_type
 ";
 $tier_distribution = $db->query($tier_query)->fetch_all(MYSQLI_ASSOC);
@@ -74,7 +73,7 @@ $tier_distribution = $db->query($tier_query)->fetch_all(MYSQLI_ASSOC);
 // Get individual members for each tier
 $members_by_tier = [];
 foreach ($tier_distribution as $tier) {
-    $key = $tier['membership_type'] . '_' . $tier['is_student'];
+    $key = $tier['membership_type'];
     
     $members_query = "
         SELECT 
@@ -91,12 +90,12 @@ foreach ($tier_distribution as $tier) {
                 ELSE 'Active'
             END as status
         FROM MEMBER
-        WHERE membership_type = ? AND is_student = ?
+        WHERE membership_type = ?
         ORDER BY expiration_date DESC
     ";
     
     $stmt = $db->prepare($members_query);
-    $stmt->bind_param("ii", $tier['membership_type'], $tier['is_student']);
+    $stmt->bind_param("i", $tier['membership_type']);
     $stmt->execute();
     $members_by_tier[$key] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -379,7 +378,6 @@ include __DIR__ . '/../templates/layout_header.php';
                     <thead>
                         <tr>
                             <th style="padding-left: 2rem;">Membership Type</th>
-                            <th>Student Status</th>
                             <th class="text-end">Total Members</th>
                             <th class="text-end">Active</th>
                             <th class="text-end">Auto-Renew</th>
@@ -389,14 +387,14 @@ include __DIR__ . '/../templates/layout_header.php';
                     <tbody>
                         <?php if (empty($tier_distribution)): ?>
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="5" class="text-center text-muted py-4">
                                     No membership data available
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($tier_distribution as $idx => $tier): ?>
                                 <?php 
-                                $tier_key = $tier['membership_type'] . '_' . $tier['is_student'];
+                                $tier_key = $tier['membership_type'];
                                 $members = $members_by_tier[$tier_key] ?? [];
                                 $tier_name = $membership_names[$tier['membership_type']] ?? 'Unknown';
                                 $price = $membership_prices[$tier['membership_type']] ?? 0;
@@ -405,13 +403,6 @@ include __DIR__ . '/../templates/layout_header.php';
                                 <!-- Summary Row -->
                                 <tr class="expandable-row" data-target="tier-detail-<?= $idx ?>" onclick="toggleDetailRow(this)">
                                     <td style="padding-left: 2rem;"><strong><?= htmlspecialchars($tier_name) ?></strong></td>
-                                    <td>
-                                        <?php if ($tier['is_student']): ?>
-                                            <span class="badge bg-info">Student</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">Non-Student</span>
-                                        <?php endif; ?>
-                                    </td>
                                     <td class="text-end"><strong><?= number_format($tier['member_count']) ?></strong></td>
                                     <td class="text-end">
                                         <span class="text-success"><?= number_format($tier['active_count']) ?></span>
@@ -426,7 +417,7 @@ include __DIR__ . '/../templates/layout_header.php';
                                 </tr>
                                 <!-- Detail Row -->
                                 <tr class="detail-row" id="tier-detail-<?= $idx ?>">
-                                    <td colspan="6" style="padding: 0; background-color: #f8f9fa;">
+                                    <td colspan="5" style="padding: 0; background-color: #f8f9fa;">
                                         <div style="padding: 1rem 0; border-left: 3px solid #0d6efd; margin-left: 2rem;">
                                             <div style="padding: 0 1rem 0.5rem 1rem;">
                                                 <strong><i class="bi bi-people"></i> Members</strong>
