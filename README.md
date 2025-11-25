@@ -14,61 +14,65 @@ This is a comprehensive museum management system built for the University of Hou
 
 ## Repository Structure
 
-```
-- public // root directory of website
-   - admin // pages pertaining to admin role
-      - events.php
-      - get_user_details.php
-      - reports.php
-      - shop.php
-      - users.php
-   - app // files for database connection
-      - config.example.php
-      - db.php
-      - permissions.php
-      - session.php
-   - curator // pages pertaining to curator role and actions
-      - acquisitions.php
-      - artists.php
-      - artworks.php
-      - exhibitions.php
-      - get_exhibition_artworks.php
-      - reports.php
-   - events // pages pertaining to event role and actions
-      - buy_ticket.php
-      - checkin.php
-      - manage.php 
-      - reports.php 
-      - sell-ticket.php
-   - member // pages pertaining to member role and actions
-      - membership.php
-      - settings.php
-      - tickets.php
-   - reports // all reports used in the system
-   - shop // pages pertaining to shop role and actions
-      - checkout.php
-      - confirm-reorder.php
-      - get-sale-details.php
-      - inventory.php
-      - new-sale.php
-      - order-confirmation.php
-      - reports.php
-      - sales.php
-   - templates // header and footer templates for consistency across pages
-   - about.php
-   - dashboard.php
-   - diag.php
-   - donate.php
-   - events.php
-   - exhibitions.php
-   - index.php
-   - login.php
-   - logout.php
-   - register.php
-   - shop.php
-- sql //
-
-```
+### /public - root directory of website
+Main web directory with all application files organized by user role
+#### /admin - admin management
+   - **events.php** - manage museum events and ticket types
+   - **get_user_details.php** - fetch user account information
+   - **shop.php** - oversee shop operations
+   - **users.php** - user account and role management, staff department 
+   assignment
+   - *reports.php* - deprecated, reports now in /reports
+#### /app - core application files
+   - **config.example.php** - database credential template
+   - **db.php** - database connection handler
+   - **permissions.php** - role based access control, file outlining all user permissions
+   - **session.php** - session and authentication management
+#### /curator - curatorial management
+   - **acquisitions.php** - manage new artwork acquisitions/donations
+   - **artists.php** - manage artist records
+   - **artworks.php** - manage museum artwork catalog
+   - **exhibitions.php** - plan and manage exhibitions
+   - **get_exhibition_artworks.php** - ajax to fetch artworks assigned to exhibition
+   - *reports.php* - deprecated
+#### /events - event management**
+   - **buy_ticket.php** - customer ticket purchase interface
+   - **checkin.php** - event check-in system
+   - **manage.php** - plan and manage events
+   - *reports.php* - deprecated
+   - **sell-ticket.php** - staff PoS interface to sell tickets
+#### /member - member portal management**
+   - **membership.php** - membership management and renewal
+   - **settings.php** - user profile settings for member
+   - **tickets.php** - view purchased tickets
+#### /reports - report generation
+   - **collection-analysis.php** -
+   - **exhibition-analytics.php** - 
+   - **financial-performance.php** - 
+   - **membership-insights.php** - 
+   - *other very small reports for quick viewing by allowed users*
+#### /shop - gift shop management**
+   - **checkout.php** - user checkout interface
+   - **confirm-reorder.php** - approve automatic shop item reorders
+   - **get-sale-details.php** - endpoint to fetch transaction details
+   - **inventory.php** - shop inventory management
+   - **new-sale.php** - PoS for shop staff
+   - **order-confirmation.php** - user transaction receipt display (after checkout)
+   - *reports.php* - deprecated
+   - **sales.php** - sales history
+#### /templates - reusable header and footer for consistency across pages
+#### /about.php - museum information
+#### /dashboard.php - shared dashboard interface for roles
+#### /diag.php - used for system diagnostics during development
+#### /donate.php - art/monetary donation form
+#### /events.php - display museum events
+#### /exhibitions.php - display museum exhibitions
+#### /index.php - homepage of website
+#### /login.php - user authentication
+#### /logout.php - session end
+#### /register.php - new member registration form
+#### /shop.php - gift shop
+### /sql - files for triggers,procedures, queries for reports
 
 ---
 
@@ -204,11 +208,11 @@ This is a comprehensive museum management system built for the University of Hou
 - `GetVisitorSales()` - Visitor value analysis
 
 **Complex Reports:**
-- Exhibition analytics (artworks, attendance, revenue)
-- Financial summaries (sales, donations, membership)
-- Collection insights (artists, mediums, periods, locations)
-- Membership metrics (active, expired, renewals, savings)
-- Inventory health (stock levels, reorder status, sales velocity)
+- Exhibition Analytics (exhibition and events performance)
+- Financial Performance (shop sales, memberships)
+- Collection Analysis (acquisition trend, museum collection growth)
+- Membership Insights (member demographics, retention)
+
 
 ---
 
@@ -294,7 +298,13 @@ The complete database schema includes 25 tables with proper relationships, forei
 **Course:** COSC 3380 Database Systems  
 **Semester:** Fall 2025  
 **Institution:** University of Houston  
-**Team Project:** Homies Fine Arts Museum Management System - Team 7
+**Team Project:** Homies Fine Arts Museum Management System - Team 7          
+**AuntEster:** Amir Nazemi    
+**exo08:** Huxley Taganahan      
+**pvakili65:** Payam Vakili      
+**michaelshibu101-sketch:** Michael Shibu    
+**anthonyhchen:** Anthony Chen
+
 
 ---
 
