@@ -46,10 +46,10 @@ Main web directory with all application files organized by user role
    - **settings.php** - user profile settings for member
    - **tickets.php** - view purchased tickets
 #### /reports - report generation
-   - **collection-analysis.php** -
-   - **exhibition-analytics.php** - 
-   - **financial-performance.php** - 
-   - **membership-insights.php** - 
+   - **collection-analysis.php** - museum collection growth and ownership breakdown
+   - **exhibition-analytics.php** - exhibition and event analysis
+   - **financial-performance.php** - comprehensive revenue analysis across shop and membership sales
+   - **membership-insights.php** - demographics and retention analysis
    - *other very small reports for quick viewing by allowed users*
 #### /shop - gift shop management**
    - **checkout.php** - user checkout interface
